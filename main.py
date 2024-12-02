@@ -8,6 +8,8 @@ from mpl_toolkits.mplot3d import Axes3D
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas
     row_count = table_widget.rowCount()
+
+    
     
     # Insertar una nueva fila
     table_widget.insertRow(row_count)
