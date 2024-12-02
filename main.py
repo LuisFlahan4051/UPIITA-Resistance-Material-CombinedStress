@@ -1,7 +1,7 @@
-from PyQt5.QtWidgets import QHBoxLayout,QComboBox, QApplication, QTableWidget, QTableWidgetItem, QCheckBox, QVBoxLayout, QWidget
 from PyQt5 import QtWidgets, uic, QtCore
+from PyQt5.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox
 import numpy as np
-from matplotlib.backends.backend_qt5agg import NavigationToolbar2QT as NavigationToolBar,FigureCanvasQTAgg as FigureCanvas
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -98,7 +98,6 @@ def create_3d_plot(parent):
 
     
     Axes3D.mouse_init
-    ax.set_navigate_mode(None)
     
     
     # Crear el canvas y agregarlo al layout del parent
