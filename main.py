@@ -1,9 +1,10 @@
-from PyQt5 import QtWidgets, uic, QtCore
-from PyQt5.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox
+from PySide6 import QtWidgets, QtCore, QtUiTools
+from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox
 import numpy as np
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
+
 
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas
@@ -47,10 +48,15 @@ def main():
     import sys
     app = QApplication(sys.argv)
     
+    
     # Cargar la interfaz de usuario desde el archivo .ui
     MainWindow = QtWidgets.QMainWindow()
     #MainWindow.setMinimumSize(1300, 800)
-    uic.loadUi('main.ui', MainWindow)
+    loader = QtUiTools.QUiLoader()
+    file = QtCore.QFile("main.ui")
+    file.open(QtCore.QFile.ReadOnly)
+    MainWindow = loader.load(file)
+    file.close()
     
     # Obtener el QTableWidget desde la interfaz cargada
     table_widget = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')

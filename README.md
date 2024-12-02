@@ -1,5 +1,21 @@
-Windows:
+```markdown
+## Windows:
+```
+
 .\.venv\Scripts\activate
 
-Linux:
+## Linux:
+
+```
 source .venv/bin/activate
+
+## Generate requirements:
+```
+
+pip freeze > requirements.txt
+
+## Install requirements:
+
+```
+pip install -r requirements.txt
+```
