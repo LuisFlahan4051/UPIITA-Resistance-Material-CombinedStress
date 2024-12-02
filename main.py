@@ -1,7 +1,7 @@
 from PySide6 import QtWidgets, QtCore, QtUiTools
 from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox
 import numpy as np
-from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
+from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
