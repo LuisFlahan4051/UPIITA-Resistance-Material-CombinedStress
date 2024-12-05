@@ -5,8 +5,56 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas,
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from graph import testGraphFunctions
+from graph import testGraphFunctions, graphStress
+from engine import engine
 
+def main():
+    esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion = engine()
+
+    graphStress(esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion)
+    run_app()
+    
+def run_app():
+    import sys
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+    
+    # Cargar la interfaz de usuario desde el archivo .ui
+    MainWindow = QtWidgets.QMainWindow()
+    #MainWindow.setMinimumSize(1300, 800)
+    loader = QtUiTools.QUiLoader()
+    file = QtCore.QFile("main.ui")
+    file.open(QtCore.QFile.ReadOnly)
+    MainWindow = loader.load(file)
+    file.close()
+    
+    # Obtener el QTableWidget desde la interfaz cargada
+    table_widget = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')
+    
+    # Configurar el QTableWidget
+    table_widget.setColumnCount(8)  # Establecer el número de columnas
+    table_widget.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])  # Establecer encabezados de columna
+    
+
+    add_row_with_checkbox(table_widget)
+    
+    graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
+    graphLayout2 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout2')
+    graphLayout3 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout3')
+    graphLayout4 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout4')
+
+    
+    create_3d_plot(graphLayout)
+    create_cylinder_plot(graphLayout2)
+    create_3d_plot(graphLayout3)
+    create_3d_plot(graphLayout4)
+
+
+    # Mostrar la ventana principal
+    MainWindow.show()
+    
+    sys.exit(app.exec())
 
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas
@@ -46,49 +94,7 @@ def add_row_with_checkbox(table_widget):
     table_widget.setItem(row_count, 1, QTableWidgetItem("Dato 1"))
     table_widget.setItem(row_count, 2, QTableWidgetItem("Dato 2"))
 
-def main():
-    testGraphFunctions()
-    #input("Press Enter to continue...")
-    
-def run_app():
-    import sys
-    app = QApplication(sys.argv)
-    
-    # Cargar la interfaz de usuario desde el archivo .ui
-    MainWindow = QtWidgets.QMainWindow()
-    #MainWindow.setMinimumSize(1300, 800)
-    loader = QtUiTools.QUiLoader()
-    file = QtCore.QFile("main.ui")
-    file.open(QtCore.QFile.ReadOnly)
-    MainWindow = loader.load(file)
-    file.close()
-    
-    # Obtener el QTableWidget desde la interfaz cargada
-    table_widget = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')
-    
-    # Configurar el QTableWidget
-    table_widget.setColumnCount(8)  # Establecer el número de columnas
-    table_widget.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])  # Establecer encabezados de columna
-    
 
-    add_row_with_checkbox(table_widget)
-    
-    graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
-    graphLayout2 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout2')
-    graphLayout3 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout3')
-    graphLayout4 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout4')
-
-    
-    create_3d_plot(graphLayout)
-    create_cylinder_plot(graphLayout2)
-    create_3d_plot(graphLayout3)
-    create_3d_plot(graphLayout4)
-
-
-    # Mostrar la ventana principal
-    MainWindow.show()
-    
-    sys.exit(app.exec())
 
 def create_3d_plot(parent):
     fig = Figure()

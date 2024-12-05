@@ -3,6 +3,80 @@ from matplotlib import pyplot as plt
 import numpy as np
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import mplcursors
+
+def graphStress(esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion):
+    fig = plt.figure()
+    ax = fig.add_subplot(311)
+    # ax11 = fig.add_subplot(322, projection='3d')
+    ax2 = fig.add_subplot(312)
+    ax3 = fig.add_subplot(313)
+
+    theta = np.linspace(0,360,100)
+    eX = maximoEsfuerzoNormalFlexionanteX*np.sin(np.radians(theta))
+    eY = maximoEsfuerzoNormalFlexionanteY*np.cos(np.radians(theta))
+    eN = esfuerzoNormal*np.ones_like(theta)
+
+    ax.plot(theta, eX, label='Esfuerzo Normal por Mx', color='blue')
+    ax.fill_between(theta, eX, color='blue', alpha=0.3)
+    ax.set_title('Esfuerzo Normal por Mx')
+    ax.legend()
+    ax.set_xlabel('Theta (°)')
+    ax.set_ylabel('Esfuerzo (Pa)')
+
+    ax.quiver(theta[::5], np.zeros_like(theta[::5]), np.zeros_like(theta[::5]), eX[::5], angles='xy', scale_units='xy', scale=1, color='blue')
+
+    # theta_rad = np.radians(theta)
+    # theta_grid, eX_grid = np.meshgrid(theta_rad, eX)
+    # X = eX_grid * np.cos(theta_grid)
+    # Y = eX_grid * np.sin(theta_grid)
+    # Z = np.ones_like(X)  # Mantener z constante
+
+    # ax11.plot_surface(X, Y, Z, color='blue', alpha=0.6)
+    # ax11.set_title('Esfuerzo Normal por Mx Enrollado')
+    # ax11.set_xlabel('Eje X')
+    # ax11.set_ylabel('Eje Y')
+    # ax11.set_zlabel('Eje Z')
+
+    
+    # Z_vector = np.zeros_like(theta)
+    # X_vector = maximoEsfuerzoNormalFlexionanteX * np.cos(np.radians(theta))
+    # Y_vector = maximoEsfuerzoNormalFlexionanteX * np.sin(np.radians(theta))
+    # U = np.zeros_like(Z_vector)
+    # V = np.zeros_like(Z_vector)
+    # W = eX
+
+    # ax11.quiver(X_vector[::5], Y_vector[::5], Z_vector[::5], U[::5], V[::5], W[::5], color='red')
+
+
+    
+    ax2.plot(theta, eY, label='Esfuerzo Normal por My', color='green')
+    ax2.fill_between(theta, eY, color='green', alpha=0.3)
+    ax2.set_title('Esfuerzo Normal por My')
+    ax2.legend()
+    ax2.set_xlabel('Theta (°)')
+    ax2.set_ylabel('Esfuerzo (Pa)')
+
+    ax2.quiver(theta[::5], np.zeros_like(theta[::5]), np.zeros_like(theta[::5]), eY[::5], angles='xy', scale_units='xy', scale=1, color='green')
+
+
+    ax3.plot(theta, eN, label='Esfuerzo Normal', color='red')
+    ax3.fill_between(theta, eN, color='red', alpha=0.3)
+    ax3.set_title('Esfuerzo Normal')
+    ax3.legend()
+    ax.set_xlabel('Theta (°)')
+    ax.set_ylabel('Esfuerzo (Pa)')
+
+    ax3.quiver(theta[::5], np.zeros_like(theta[::5]), np.zeros_like(theta[::5]), eN[::5], angles='xy', scale_units='xy', scale=1, color='red')
+
+
+    #mplcursors.cursor(ax, hover=True)
+    #mplcursors.cursor(ax2, hover=True)
+    #mplcursors.cursor(ax3, hover=True)
+
+    plt.tight_layout()
+    plt.show()
+    input("Press Enter to continue...")
 
 def testGraphFunctions():
     fig = plt.figure()

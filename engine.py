@@ -13,7 +13,7 @@ cord_x=0
 cord_y=1
 cord_z=2
 
-def main():
+def engine():
 
     profile = 'circle'
     if profile == 'circle':
@@ -52,7 +52,7 @@ def main():
     print(f"El máximo esfuerzo normal flexionante en X es: {format_eng(maximoEsfuerzoNormalFlexionanteX)} Pa")
     print(f"El máximo esfuerzo normal flexionante en Y es: {format_eng(maximoEsfuerzoNormalFlexionanteY)} Pa")
     print(f"El máximo esfuerzo cortante por torsión es: {format_eng(maximoEsfuerzoCortanteTorsion)} Pa")
-
+    return esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion
     
 
 def format_eng(value):
@@ -120,6 +120,3 @@ def parse_eng(value_str):
     
     exponent = prefixes[prefix]
     return mantissa * (10 ** exponent)
-
-if __name__ == '__main__':
-    main()
