@@ -5,6 +5,8 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas,
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
+from graph import testGraphFunctions
+
 
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas
@@ -45,9 +47,12 @@ def add_row_with_checkbox(table_widget):
     table_widget.setItem(row_count, 2, QTableWidgetItem("Dato 2"))
 
 def main():
+    testGraphFunctions()
+    input("Press Enter to continue...")
+    
+def run_app():
     import sys
     app = QApplication(sys.argv)
-    
     
     # Cargar la interfaz de usuario desde el archivo .ui
     MainWindow = QtWidgets.QMainWindow()
@@ -75,7 +80,7 @@ def main():
 
     
     create_3d_plot(graphLayout)
-    create_3d_plot(graphLayout2)
+    create_cylinder_plot(graphLayout2)
     create_3d_plot(graphLayout3)
     create_3d_plot(graphLayout4)
 
@@ -83,7 +88,7 @@ def main():
     # Mostrar la ventana principal
     MainWindow.show()
     
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 def create_3d_plot(parent):
     fig = Figure()
@@ -115,6 +120,40 @@ def create_3d_plot(parent):
     parent.addWidget(canvas)
     parent.addWidget(toolbar)
     
+def create_cylinder_plot(parent):
+    fig = Figure()
+    ax = fig.add_subplot(111, projection='3d')
+    
+    # Datos para el cilindro
+    z = np.linspace(0, 1, 100)
+    theta = np.linspace(0, 2 * np.pi, 100)
+    theta, z = np.meshgrid(theta, z)
+    x = np.cos(theta)
+    y = np.sin(theta)
+    
+    # Crear el plot del cilindro
+    ax.plot_surface(x, y, z, cmap='viridis')
+
+    # Crear las caras superior e inferior
+    ax.plot_surface(x, y, np.zeros_like(z), color='b', alpha=0.5)  # Cara inferior
+    ax.plot_surface(x, y, np.ones_like(z), color='b', alpha=0.5)   # Cara superior
+    
+    
+    # Agregar título y títulos a los ejes
+    ax.set_title('Cilindro Sólido')
+    ax.set_xlabel('Eje X')
+    ax.set_ylabel('Eje Y')
+    ax.set_zlabel('Eje Z')
+    
+    # Habilitar el control de zoom y rotación
+    ax.mouse_init()
+    
+    # Crear el canvas y agregarlo al layout del parent
+    canvas = FigureCanvas(fig)
+    canvas.draw()
+    toolbar = NavigationToolBar(canvas)
+    parent.addWidget(canvas)
+    parent.addWidget(toolbar)
 
 if __name__ == '__main__':
     main()
