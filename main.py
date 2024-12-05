@@ -48,7 +48,7 @@ def add_row_with_checkbox(table_widget):
 
 def main():
     testGraphFunctions()
-    input("Press Enter to continue...")
+    #input("Press Enter to continue...")
     
 def run_app():
     import sys
