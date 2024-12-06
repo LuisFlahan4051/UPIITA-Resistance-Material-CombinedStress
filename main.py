@@ -6,12 +6,12 @@ from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
 from graph import testGraphFunctions, graphStress
-from engine import engine
+from engine import engine, format_eng
 
 def main():
-    esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion = engine()
-
-    graphStress(esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion)
+    resultados = engine()
+    
+    graphStress(resultados)
     run_app()
     
 def run_app():
@@ -20,24 +20,26 @@ def run_app():
     if app is None:
         app = QApplication(sys.argv)
     
-    # Cargar la interfaz de usuario desde el archivo .ui
+   
     MainWindow = QtWidgets.QMainWindow()
-    #MainWindow.setMinimumSize(1300, 800)
+   
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("main.ui")
     file.open(QtCore.QFile.ReadOnly)
     MainWindow = loader.load(file)
     file.close()
     
-    # Obtener el QTableWidget desde la interfaz cargada
-    table_widget = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')
+    dataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')
+    dataTable.setColumnCount(8)  # Establecer el número de columnas
+    dataTable.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])
     
-    # Configurar el QTableWidget
-    table_widget.setColumnCount(8)  # Establecer el número de columnas
-    table_widget.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])  # Establecer encabezados de columna
-    
+    outDataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'outDataTable')
+    outDataTable.setColumnCount(100)
+    outDataTable.setRowCount(3)
+    outDataTable.setVerticalHeaderLabels(['Esfuerzo Normal por Mx','Esfuerzo Normal por My','Esfuerzo Normal'])
+    setResultValues(outDataTable, engine())
 
-    add_row_with_checkbox(table_widget)
+    add_row_with_checkbox(dataTable)
     
     graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
     graphLayout2 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout2')
@@ -50,11 +52,21 @@ def run_app():
     create_3d_plot(graphLayout3)
     create_3d_plot(graphLayout4)
 
-
-    # Mostrar la ventana principal
     MainWindow.show()
     
     sys.exit(app.exec())
+
+def setResultValues(outDataTable, resultados):
+    theta = np.linspace(0,360,100)
+    eX = resultados['maximoEsfuerzoNormalFlexionanteX']*np.sin(np.radians(theta))
+    eY = resultados['maximoEsfuerzoNormalFlexionanteY']*np.cos(np.radians(theta))
+    eN = resultados['esfuerzoNormalPromedio']*np.ones_like(theta)
+
+    for i in range(0,100):
+        outDataTable.setItem(0, i, QTableWidgetItem(f"{format_eng(eX[i])}"))
+        outDataTable.setItem(1, i, QTableWidgetItem(f"{format_eng(eY[i])}"))
+        outDataTable.setItem(2, i, QTableWidgetItem(f"{format_eng(eN[i])}"))
+    
 
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas

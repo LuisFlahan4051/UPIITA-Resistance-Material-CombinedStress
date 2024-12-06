@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import mplcursors
 
-def graphStress(esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion):
+def graphStress(resultados):
     fig = plt.figure()
     ax = fig.add_subplot(311)
     # ax11 = fig.add_subplot(322, projection='3d')
@@ -13,9 +13,9 @@ def graphStress(esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfu
     ax3 = fig.add_subplot(313)
 
     theta = np.linspace(0,360,100)
-    eX = maximoEsfuerzoNormalFlexionanteX*np.sin(np.radians(theta))
-    eY = maximoEsfuerzoNormalFlexionanteY*np.cos(np.radians(theta))
-    eN = esfuerzoNormal*np.ones_like(theta)
+    eX = resultados['maximoEsfuerzoNormalFlexionanteX']*np.sin(np.radians(theta))
+    eY = resultados['maximoEsfuerzoNormalFlexionanteY']*np.cos(np.radians(theta))
+    eN = resultados['esfuerzoNormalPromedio']*np.ones_like(theta)
 
     ax.plot(theta, eX, label='Esfuerzo Normal por Mx', color='blue')
     ax.fill_between(theta, eX, color='blue', alpha=0.3)
@@ -76,7 +76,6 @@ def graphStress(esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfu
 
     plt.tight_layout()
     plt.show()
-    input("Press Enter to continue...")
 
 def testGraphFunctions():
     fig = plt.figure()

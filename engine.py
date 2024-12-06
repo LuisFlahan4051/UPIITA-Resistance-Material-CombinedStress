@@ -38,22 +38,39 @@ def engine():
     matrizMomento = np.cross(vectorPosicion1, vectorFuerza1)
     print(f"El momento es: {matrizMomento}")
 
-    esfuerzoNormal = vectorFuerza1[cord_z]/area
-    esfuerzoCortanteX = vectorFuerza1[cord_x]/area
-    esfuerzoCortanteY = vectorFuerza1[cord_y]/area
+    esfuerzoNormalPromedio = vectorFuerza1[cord_z]/area
+    esfuerzoCortantePromedioX = vectorFuerza1[cord_x]/area
+    maximoEsfuerzoCortanteX = (4/3) * esfuerzoCortantePromedioX
+    esfuerzoCortantePromedioY = vectorFuerza1[cord_y]/area
+    maximoEsfuerzoCortanteY = (4/3) * esfuerzoCortantePromedioY
 
     maximoEsfuerzoNormalFlexionanteX = (matrizMomento[cord_x] * radius) / momentX
     maximoEsfuerzoNormalFlexionanteY = (matrizMomento[cord_y] * radius) / momentY
     maximoEsfuerzoCortanteTorsion = (matrizMomento[cord_z] * radius) / polarMomentZ
+    esfuerzoCortanteTorsionPromedio = (2/3) * (maximoEsfuerzoCortanteTorsion)
 
-    print(f"El esfuerzo normal es: {format_eng(esfuerzoNormal)} Pa")
-    print(f"El esfuerzo cortante en X es: {format_eng(esfuerzoCortanteX)} Pa")
-    print(f"El esfuerzo cortante en Y es: {format_eng(esfuerzoCortanteY)} Pa")
+    print(f"El esfuerzo normal es: {format_eng(esfuerzoNormalPromedio)} Pa")
+    print(f"El esfuerzo cortante en X es: {format_eng(esfuerzoCortantePromedioX)} Pa")
+    print(f"El máximo esfuerzo cortante en X es: {format_eng(maximoEsfuerzoCortanteX)} Pa")
+    print(f"El esfuerzo cortante en Y es: {format_eng(esfuerzoCortantePromedioY)} Pa")
+    print(f"El máximo esfuerzo cortante en Y es: {format_eng(maximoEsfuerzoCortanteY)} Pa")
+
     print(f"El máximo esfuerzo normal flexionante en X es: {format_eng(maximoEsfuerzoNormalFlexionanteX)} Pa")
     print(f"El máximo esfuerzo normal flexionante en Y es: {format_eng(maximoEsfuerzoNormalFlexionanteY)} Pa")
     print(f"El máximo esfuerzo cortante por torsión es: {format_eng(maximoEsfuerzoCortanteTorsion)} Pa")
-    return esfuerzoNormal, esfuerzoCortanteX, esfuerzoCortanteY, maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, maximoEsfuerzoCortanteTorsion
+    print(f"El esfuerzo cortante por torsión promedio es: {format_eng(esfuerzoCortanteTorsionPromedio)} Pa")
     
+    return {
+        'esfuerzoNormalPromedio': esfuerzoNormalPromedio,
+        'esfuerzoCortantePromedioX': esfuerzoCortantePromedioX,
+        'maximoEsfuerzoCortanteX': maximoEsfuerzoCortanteX,
+        'esfuerzoCortantePromedioY': esfuerzoCortantePromedioY,
+        'maximoEsfuerzoCortanteY': maximoEsfuerzoCortanteY,
+        'maximoEsfuerzoNormalFlexionanteX': maximoEsfuerzoNormalFlexionanteX,
+        'maximoEsfuerzoNormalFlexionanteY': maximoEsfuerzoNormalFlexionanteY,
+        'maximoEsfuerzoCortanteTorsion': maximoEsfuerzoCortanteTorsion,
+        'esfuerzoCortanteTorsionPromedio': esfuerzoCortanteTorsionPromedio
+    }
 
 def format_eng(value):
     """
