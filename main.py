@@ -5,14 +5,16 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas,
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from graph import testGraphFunctions, graphStress
+from graph import testGraphFunctions, graphStress, graphNormalStressOfMoment
 from engine import engine, format_eng
 
 def main():
     resultados = engine()
     
-    graphStress(resultados)
-    run_app()
+    graphNormalStressOfMoment(resultados)
+    #testGraphFunctions()
+    #graphStress(resultados)
+    #run_app()
     
 def run_app():
     import sys
@@ -24,7 +26,7 @@ def run_app():
     MainWindow = QtWidgets.QMainWindow()
    
     loader = QtUiTools.QUiLoader()
-    file = QtCore.QFile("main.ui")
+    file = QtCore.QFile("./main.ui")
     file.open(QtCore.QFile.ReadOnly)
     MainWindow = loader.load(file)
     file.close()

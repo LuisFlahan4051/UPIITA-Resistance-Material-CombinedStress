@@ -5,6 +5,9 @@ from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import mplcursors
 
+
+
+
 def graphStress(resultados):
     fig = plt.figure()
     ax = fig.add_subplot(311)
@@ -25,6 +28,7 @@ def graphStress(resultados):
     ax.set_ylabel('Esfuerzo (Pa)')
 
     ax.quiver(theta[::5], np.zeros_like(theta[::5]), np.zeros_like(theta[::5]), eX[::5], angles='xy', scale_units='xy', scale=1, color='blue')
+    
 
     # theta_rad = np.radians(theta)
     # theta_grid, eX_grid = np.meshgrid(theta_rad, eX)
@@ -77,32 +81,104 @@ def graphStress(resultados):
     plt.tight_layout()
     plt.show()
 
-def testGraphFunctions():
+
+def graphNormalStressOfMoment(resultados):
     fig = plt.figure()
+
+    radius = 1
+    
     axis = fig.add_subplot(121, projection='3d')
-
-    solid_cylinder(1, 1, axis)
-
-    # Agregar títulos a los ejes
-    axis.set_title('Cilindro')
-    axis.set_xlabel('Eje X')
-    axis.set_ylabel('Eje Y')
-    axis.set_zlabel('Eje Z')
+    amplitude = resultados['maximoEsfuerzoNormalFlexionanteX']
+    waveAtCylinder(radius, amplitude, 1, 0, axis)
+    circular_plane(radius, 0, axis)
+    axis.set_xlabel('X')
+    axis.set_ylabel('Y')
+    axis.set_zlabel('Z')
+    axis.set_xlim([-radius, radius])
+    axis.set_ylim([-radius, radius])
+    axis.set_zlim([-amplitude, amplitude])  # Límite en Z basado en la amplitud
     
     axis2 = fig.add_subplot(122, projection='3d')
-    #draw_vector(axis2, (0, 0, 0), (1, 1, 1))
-    draw_vector_field(axis2, vector_field_func, (-1, 1), (-1, 1), (-1, 1), density=5)
+    amplitude = resultados['maximoEsfuerzoNormalFlexionanteY']
+    waveAtCylinder(radius, amplitude, 1, np.pi/2, axis2)
+    circular_plane(radius, 0, axis2)
+    axis2.set_xlabel('X')
+    axis2.set_ylabel('Y')
+    axis2.set_zlabel('Z')
+    axis2.set_xlim([-radius, radius])
+    axis2.set_ylim([-radius, radius])
+    axis2.set_zlim([-amplitude, amplitude])
+    plt.show()
     
-    plt.show()
 
 
-def sinusoide():
-    x = np.linspace(0, 10, 100)
-    y = np.sin(x)
-    plt.plot(x, y)
-    plt.show()
+def waveAtCylinder(radius, amplitude, cycles, phase, axis):
+    """
+    Dibuja una onda senoidal sobre la superficie de un cilindro.
+
+    Args:
+        radius (float): El radio del cilindro.
+        amplitude (float): La amplitud de la onda senoidal.
+        cycles (int): El número de ciclos de la onda senoidal.
+        phase (float): La fase de la onda senoidal.
+        axis (Axes3D): El objeto Axes3D donde se dibujará la onda senoidal.
+
+    Returns:
+        None
+    """
+    theta = np.linspace(0, 2*np.pi, 100)  # Ángulo para media onda
+    z = np.linspace(0, 1, 100)         # Altura (relleno vertical)
+
+    # Crear la cuadrícula
+    Theta, z = np.meshgrid(theta, z)  # Mallado para theta y la onda
+    X = radius * np.cos(Theta)              # Coordenadas X
+    Y = radius * np.sin(Theta)              # Coordenadas Y
+    Z = amplitude * np.sin(cycles * Theta + phase) * z  # Limitar Z a estar entre 0 y la onda seno
+
+    # Dibujar la superficie
+    axis.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
+
+    # Dibujar vectores desde z=0 hasta la superficie
+    indices = np.arange(0, len(theta), 5)  # Seleccionar algunos índices
+    X_vec = X[0, indices]
+    Y_vec = Y[0, indices]
+    Z_vec = np.zeros_like(X_vec)
+    U = np.zeros_like(X_vec)
+    V = np.zeros_like(Y_vec)
+    W = amplitude * np.sin(cycles * theta[indices] + phase)
+
+    # arrow_length_ratio = 0; los cabezales de las flechas no se dibujan bien con amplitudes grandes
+    axis.quiver(X_vec, Y_vec, Z_vec, U, V, W, cmap='viridis',alpha=0.5, length=1, arrow_length_ratio=0,linewidth=3)
+
+def solid_cylinder(radius, height, axis):
+    """
+    Dibuja un cilindro sólido en un gráfico 3D.
+
+    Args:
+        radius (float): El radio del cilindro.
+        height (float): La altura del cilindro.
+        axis (Axes3D): El objeto Axes3D donde se dibujará el cilindro.
+
+    Returns:
+        None
+    """
+    cylinder(0, radius, height, axis)
+    circular_plane(radius, 0, axis)
+    circular_plane(radius, height, axis)
 
 def cylinder(origin,radius, height, axis):
+    """
+    Dibuja un cilindro en un gráfico 3D.
+
+    Args:
+        origin (float): La coordenada Z de origen del cilindro.
+        radius (float): El radio del cilindro.
+        height (float): La altura del cilindro.
+        axis (Axes3D): El objeto Axes3D donde se dibujará el cilindro.
+
+    Returns:
+        None
+    """
     z = np.linspace(origin, height, 20)
     theta = np.linspace(0, 2 * np.pi, 100)
     theta, z = np.meshgrid(theta, z)
@@ -112,6 +188,17 @@ def cylinder(origin,radius, height, axis):
     axis.plot_surface(x, y, z, cmap='viridis')
 
 def circular_plane(radius, height, axis):
+    """
+    Dibuja un plano circular en un gráfico 3D.
+
+    Args:
+        radius (float): El radio del plano circular.
+        height (float): La altura en el eje Z donde se dibujará el plano circular.
+        axis (Axes3D): El objeto Axes3D donde se dibujará el plano circular.
+
+    Returns:
+        None
+    """
     # Crear una cuadrícula de coordenadas
     theta = np.linspace(0, 2 * np.pi, 100)
     radius = np.linspace(0, radius, 50)
@@ -124,12 +211,36 @@ def circular_plane(radius, height, axis):
     z = np.ones_like(x) * z # Rellena la matriz z con el valor de z con el mismo tamaño de x
     
     # Dibujar el plano circular
-    axis.plot_surface(x, y, z, cmap='viridis')
+    axis.plot_surface(x, y, z, cmap='viridis', alpha=0.5)
 
-def solid_cylinder(radius, height, axis):
-    cylinder(0, radius, height, axis)
-    circular_plane(radius, 0, axis)
-    circular_plane(radius, height, axis)
+# -------------------- TEST ------------------------ #
+
+def testGraphFunctions():
+    """
+    Ejecuta esta función para probar las funciones de gráficos.
+    """
+    fig = plt.figure()
+    axis = fig.add_subplot(131, projection='3d')
+
+    solid_cylinder(1, 1, axis)
+
+    # Agregar títulos a los ejes
+    axis.set_title('Cilindro')
+    axis.set_xlabel('Eje X')
+    axis.set_ylabel('Eje Y')
+    axis.set_zlabel('Eje Z')
+    
+    axis2 = fig.add_subplot(132, projection='3d')
+    draw_vector_field(axis2, vector_field_func, (-1, 1), (-1, 1), (-1, 1), density=5)
+    
+    axis3 = fig.add_subplot(133, projection='3d')
+    axis3.set_title('Vector')
+    axis3.set_xlim([0, 2])
+    axis3.set_ylim([0, 2])
+    axis3.set_zlim([0, 2])
+    draw_vector(axis3, (0, 0, 0), (1, 1, 1))
+    plt.show()
+
 
 def draw_vector(ax, origin, vector):
     """
