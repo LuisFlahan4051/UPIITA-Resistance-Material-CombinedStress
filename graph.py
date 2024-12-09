@@ -6,7 +6,120 @@ from mpl_toolkits.mplot3d import Axes3D
 import mplcursors
 
 
+def tangentVectorsAtCircle(radius, axis, zDirection=-1):
+    """
+    Dibuja un campo de vectores tangentes a un círculo en un gráfico 3D.
 
+    Args:
+        radius (float): El radio del círculo.
+        amplitude (float): La amplitud de los vectores.
+        cycles (int): El número de ciclos de los vectores.
+        phase (float): La fase de los vectores.
+        axis (Axes3D): El objeto Axes3D donde se dibujarán los vectores.
+
+    Returns:
+        None
+    """
+    if zDirection > 0:
+        direction = -1
+    else:
+        direction = 1
+
+    theta = np.linspace(0, 2*np.pi, 100)  # Ángulo para media onda
+    z = np.linspace(0, 1, 100)         # Altura (relleno vertical)
+
+    # Crear la cuadrícula
+    Theta, z = np.meshgrid(theta, z)  # Mallado para theta y la onda
+    X = radius * np.cos(Theta)              # Coordenadas X
+    Y = radius * np.sin(Theta)              # Coordenadas Y
+    Z = np.cos(Theta) * z  # Limitar Z a estar entre 0 y la onda seno
+
+    # Dibujar la superficie
+    axis.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
+
+    # Dibujar vectores desde z=0 hasta la superficie
+    indices = np.arange(0, len(theta), 5)  # Seleccionar algunos índices
+    X_vec = X[0, indices]
+    Y_vec = Y[0, indices]
+    Z_vec = np.zeros_like(X_vec)
+    U = direction*np.sin( theta[indices])
+    V = -direction*np.cos(theta[indices])
+    W = np.zeros_like(Z_vec)
+
+    axis.quiver(X_vec, Y_vec, Z_vec, U, V, W, length=1, cmap='viridis', alpha=0.5,normalize=True)
+
+def graphTorsionalShearStress(resultados):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    radius = 1
+    amplitude = resultados['maximoEsfuerzoCortanteTorsion']
+    tangentVectorsAtCircle(radius, ax)
+    circular_plane(radius, 0, ax)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_xlim([-radius, radius])
+    ax.set_ylim([-radius, radius])
+    ax.set_zlim([-amplitude, amplitude]) 
+    
+    plt.show()
+
+def drawNormalVectorAtSurface(radius, esfuerzoNormalPromedio, axis, originPlane=0,height=1):
+    """
+    Dibuja vectores normales a la superficie de un cilindro en toda la matriz del círculo.
+
+    Args:
+        radius (float): El radio del cilindro.
+        height (float): La altura del cilindro.
+        esfuerzoNormalPromedio (float): El esfuerzo normal promedio.
+        axis (Axes3D): El objeto Axes3D donde se dibujarán los vectores.
+
+    Returns:
+        None
+    """
+    # Crear una cuadrícula de coordenadas
+    theta = np.linspace(0, 2 * np.pi, 20)
+    r = np.linspace(0, radius, 5)
+    theta, r = np.meshgrid(theta, r)
+    
+    # Convertir coordenadas polares a cartesianas
+    x = r * np.cos(theta)
+    y = r * np.sin(theta)
+    z = np.ones_like(x) * originPlane  # Altura constante
+
+    # Componentes del vector normal
+    u = np.zeros_like(x)
+    v = np.zeros_like(y)
+    w = np.ones_like(z) * height
+
+    # Dibujar los vectores normales
+    axis.quiver(x, y, z, u, v, w, cmap='viridis', arrow_length_ratio=1/(height*10), alpha=0.5)
+
+
+
+def graphPerpendicularStress(resultados):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    esfuerzoNormalPromedio = resultados['esfuerzoNormalPromedio']
+    
+    
+    radius = 1
+    height = esfuerzoNormalPromedio
+    circular_plane(radius, 0, ax)
+    circular_plane(radius, height, ax,alpha=0.3)
+    drawNormalVectorAtSurface(radius,esfuerzoNormalPromedio, ax,0, height)
+
+    
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_xlim([-radius, radius])
+    ax.set_ylim([-radius, radius])
+    ax.set_zlim([0, height])  
+
+    plt.show()
 
 def graphStress(resultados):
     fig = plt.figure()
@@ -139,7 +252,7 @@ def waveAtCylinder(radius, amplitude, cycles, phase, axis):
     axis.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
 
     # Dibujar vectores desde z=0 hasta la superficie
-    indices = np.arange(0, len(theta), 5)  # Seleccionar algunos índices
+    indices = np.arange(0, len(theta), 4)  # Seleccionar algunos índices
     X_vec = X[0, indices]
     Y_vec = Y[0, indices]
     Z_vec = np.zeros_like(X_vec)
@@ -148,7 +261,10 @@ def waveAtCylinder(radius, amplitude, cycles, phase, axis):
     W = amplitude * np.sin(cycles * theta[indices] + phase)
 
     # arrow_length_ratio = 0; los cabezales de las flechas no se dibujan bien con amplitudes grandes
-    axis.quiver(X_vec, Y_vec, Z_vec, U, V, W, cmap='viridis',alpha=0.5, length=1, arrow_length_ratio=0,linewidth=3)
+    arrow_length_ratio = 1/(amplitude*10)  # Relación de longitud de la flecha
+    #arrow_length_ratio = 0
+
+    axis.quiver(X_vec, Y_vec, Z_vec, U, V, W, cmap='viridis',alpha=0.7, length=1, arrow_length_ratio=arrow_length_ratio,linewidth=2)
 
 def solid_cylinder(radius, height, axis):
     """
@@ -187,7 +303,7 @@ def cylinder(origin,radius, height, axis):
     
     axis.plot_surface(x, y, z, cmap='viridis')
 
-def circular_plane(radius, height, axis):
+def circular_plane(radius, height, axis, alpha=0.5):
     """
     Dibuja un plano circular en un gráfico 3D.
 
@@ -211,7 +327,7 @@ def circular_plane(radius, height, axis):
     z = np.ones_like(x) * z # Rellena la matriz z con el valor de z con el mismo tamaño de x
     
     # Dibujar el plano circular
-    axis.plot_surface(x, y, z, cmap='viridis', alpha=0.5)
+    axis.plot_surface(x, y, z, cmap='viridis', alpha=alpha)
 
 # -------------------- TEST ------------------------ #
 

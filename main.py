@@ -5,15 +5,17 @@ from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas,
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
 
-from graph import testGraphFunctions, graphStress, graphNormalStressOfMoment
+from graph import testGraphFunctions, graphStress, graphNormalStressOfMoment,graphPerpendicularStress,graphTorsionalShearStress
 from engine import engine, format_eng
 
 def main():
     resultados = engine()
-    
-    graphNormalStressOfMoment(resultados)
-    #testGraphFunctions()
-    #graphStress(resultados)
+
+    graphTorsionalShearStress(resultados)
+    # graphPerpendicularStress(resultados)
+    # graphStress(resultados)
+    # graphNormalStressOfMoment(resultados)
+    # testGraphFunctions()
     #run_app()
     
 def run_app():

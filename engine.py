@@ -13,6 +13,24 @@ cord_x=0
 cord_y=1
 cord_z=2
 
+def esfuerzoCortantePorFlexionEnAngulo(maximoEsfuerzoCortante, gradoObservacion, radio):
+    """
+    Entrega el esfuerzo cortante que varia parabólicamente en función de un grado de perspectiva respecto al eje neutro y el eje direccón.
+
+    Args:
+        grado (float): entre 0 y 90 grados.
+        radio (float): radio de la sección transversal.
+
+    Returns:
+        float: el esfuerzo cortante en función del grado de observación.
+    """
+    gradoObservacion = np.abs(gradoObservacion)
+    if gradoObservacion > 360:
+        gradoObservacion = gradoObservacion % 360
+    
+    r= radio * np.sin(np.radians(gradoObservacion))
+    return maximoEsfuerzoCortante * (1 - (r/radio)**2)
+
 def engine():
 
     profile = 'circle'
@@ -60,6 +78,24 @@ def engine():
     print(f"El máximo esfuerzo cortante por torsión es: {format_eng(maximoEsfuerzoCortanteTorsion)} Pa")
     print(f"El esfuerzo cortante por torsión promedio es: {format_eng(esfuerzoCortanteTorsionPromedio)} Pa")
     
+    esfuerzos = []
+    ey=esfuerzoCortantePorFlexionEnAngulo(maximoEsfuerzoCortanteY, 30, radius)
+    print(ey)
+    ex=esfuerzoCortantePorFlexionEnAngulo(maximoEsfuerzoCortanteX, 30+90, radius)
+    print(ex)
+
+    et= np.sqrt(ex**2 + ey**2)
+    print(et)
+    eang= np.degrees(np.arctan(ey/ex))
+    print(eang)
+
+
+
+
+    # for i in range(0,360):
+    #     esfuerzos.append(esfuerzoCortantePorFlexionEnAngulo(maximoEsfuerzoCortanteX, i, radius))
+    # print(esfuerzos)
+        
     return {
         'esfuerzoNormalPromedio': esfuerzoNormalPromedio,
         'esfuerzoCortantePromedioX': esfuerzoCortantePromedioX,
