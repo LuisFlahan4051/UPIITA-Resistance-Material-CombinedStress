@@ -6,7 +6,7 @@ from mpl_toolkits.mplot3d import Axes3D
 import mplcursors
 
 
-def tangentVectorsAtCircle(radius, axis, zDirection=-1):
+def tangentVectorsAtCircle(radius, axis, zDirection=1):
     """
     Dibuja un campo de vectores tangentes a un círculo en un gráfico 3D.
 
@@ -32,10 +32,6 @@ def tangentVectorsAtCircle(radius, axis, zDirection=-1):
     Theta, z = np.meshgrid(theta, z)  # Mallado para theta y la onda
     X = radius * np.cos(Theta)              # Coordenadas X
     Y = radius * np.sin(Theta)              # Coordenadas Y
-    Z = np.cos(Theta) * z  # Limitar Z a estar entre 0 y la onda seno
-
-    # Dibujar la superficie
-    axis.plot_surface(X, Y, Z, cmap='viridis', alpha=0.8)
 
     # Dibujar vectores desde z=0 hasta la superficie
     indices = np.arange(0, len(theta), 5)  # Seleccionar algunos índices
@@ -47,6 +43,8 @@ def tangentVectorsAtCircle(radius, axis, zDirection=-1):
     W = np.zeros_like(Z_vec)
 
     axis.quiver(X_vec, Y_vec, Z_vec, U, V, W, length=1, cmap='viridis', alpha=0.5,normalize=True)
+
+
 
 def graphTorsionalShearStress(resultados):
     fig = plt.figure()
@@ -62,6 +60,23 @@ def graphTorsionalShearStress(resultados):
     ax.set_xlim([-radius, radius])
     ax.set_ylim([-radius, radius])
     ax.set_zlim([-amplitude, amplitude]) 
+    
+    plt.show()
+
+def graphFlexuralShearStress(resultados):
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+
+    radius = 1
+    amplitude = resultados['maximoEsfuerzoCortanteX']
+    drawParabolicVectorsAtCicle(radius, ax, 1)
+    circular_plane(radius, 0, ax)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.set_zlabel('Z')
+    ax.set_xlim([-radius, radius])
+    ax.set_ylim([-radius, radius])
+    ax.set_zlim([-2, 2]) 
     
     plt.show()
 
@@ -96,7 +111,49 @@ def drawNormalVectorAtSurface(radius, esfuerzoNormalPromedio, axis, originPlane=
     # Dibujar los vectores normales
     axis.quiver(x, y, z, u, v, w, cmap='viridis', arrow_length_ratio=1/(height*10), alpha=0.5)
 
+#TODO: Revisar
+def drawParabolicVectorsAtCicle(radius, axis, direction=1):
+    """
+    Dibuja vectores paralelos al eje Y o X dependiendo el argumento direction, al rededor de una circunferencia donde su tamaño decrece parabólicamente.
 
+    Args:
+        radius (float): El radio del círculo.
+        axis (Axes3D): El objeto Axes3D donde se dibujarán los vectores.
+        direction (int): 1 para vectores en dirección X, -1 para vectores en dirección Y.
+        
+    Returns:
+        None
+    """
+
+    # Normalizar la dirección
+    direction = 1 if direction > 0 else -1
+
+    # Ángulos para recorrer el círculo
+    theta = np.linspace(0, 2 * np.pi, 100)  # Dividido en 100 puntos
+
+    # Coordenadas del círculo
+    X = radius * np.cos(theta)
+    Y = radius * np.sin(theta)
+    Z = np.zeros_like(X)  # Para que esté en el plano Z=0
+
+    # Magnitud de los vectores (parabólica en semicírculo superior)
+    magnitudes = 1 - (np.abs(theta - np.pi) / np.pi)**2  # Parabólica
+
+    # Componentes de los vectores
+    if direction == 1:
+        U = magnitudes * np.sign(np.cos(theta))  # Direccionados en X
+        V = np.zeros_like(U)  # Sin componente en Y
+    else:
+        U = np.zeros_like(Y)  # Sin componente en X
+        V = magnitudes * np.sign(np.sin(theta))  # Direccionados en Y
+
+    W = np.zeros_like(Z)  # Sin componente vertical
+
+    # Filtrar algunos puntos para claridad visual
+    indices = np.arange(0, len(theta), 5)  # Escoger un subconjunto para claridad
+    axis.quiver(X[indices], Y[indices], Z[indices], 
+                U[indices], V[indices], W[indices], 
+                length=0.2, color='blue')
 
 def graphPerpendicularStress(resultados):
     fig = plt.figure()
