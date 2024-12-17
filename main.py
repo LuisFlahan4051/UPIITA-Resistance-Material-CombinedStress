@@ -9,16 +9,16 @@ import plotly.graph_objects as plt
 from plotly.subplots import make_subplots
 import tempfile
 
-from graph import testGraphFunctions, graphStress, graphNormalStressOfMoment,graphPerpendicularStress,graphTorsionalShearStress, graphFlexuralShearStress
+from graph import graphStress, graphNormalStressOfMoment,graphPerpendicularStress,graphTorsionalShearStress, graphFlexuralShearStress
 from engine import engine, format_eng
 
 def main():
     resultados = engine()
 
-    graphFlexuralShearStress(resultados)
+    # graphFlexuralShearStress(resultados)
     # graphTorsionalShearStress(resultados)
     # graphPerpendicularStress(resultados)
-    # graphStress(resultados)
+    graphStress(resultados)
     # graphNormalStressOfMoment(resultados)
     # testGraphFunctions()
     #run_app()
