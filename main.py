@@ -1,21 +1,25 @@
 from PySide6 import QtWidgets, QtCore, QtUiTools
 from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox
+from PySide6.QtWebEngineWidgets import QWebEngineView
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
 from matplotlib.figure import Figure
 from mpl_toolkits.mplot3d import Axes3D
+import plotly.graph_objects as plt
+from plotly.subplots import make_subplots
+import tempfile
 
 from graph import testGraphFunctions, graphStress, graphNormalStressOfMoment,graphPerpendicularStress,graphTorsionalShearStress, graphFlexuralShearStress
 from engine import engine, format_eng
 
 def main():
-    resultados = engine()
+    # resultados = engine()
 
-    graphFlexuralShearStress(resultados)
-    graphTorsionalShearStress(resultados)
-    graphPerpendicularStress(resultados)
-    graphStress(resultados)
-    graphNormalStressOfMoment(resultados)
+    # graphFlexuralShearStress(resultados)
+    # graphTorsionalShearStress(resultados)
+    # graphPerpendicularStress(resultados)
+    # graphStress(resultados)
+    # graphNormalStressOfMoment(resultados)
     # testGraphFunctions()
     run_app()
     
@@ -52,10 +56,10 @@ def run_app():
     graphLayout4 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout4')
 
     
-    create_3d_plot(graphLayout)
-    create_cylinder_plot(graphLayout2)
-    create_3d_plot(graphLayout3)
-    create_3d_plot(graphLayout4)
+    create_3d_plotly(graphLayout)
+    # create_cylinder_plot(graphLayout2)
+    # create_3d_plot(graphLayout3)
+    # create_3d_plot(graphLayout4)
 
     MainWindow.show()
     
@@ -125,16 +129,13 @@ def create_3d_plot(parent):
     
     # Crear el plot
     ax.plot_surface(x, y, z, cmap='viridis')
-    
     # Agregar título y títulos a los ejes
     ax.set_title('Superficie 3D')
     ax.set_xlabel('Eje X')
     ax.set_ylabel('Eje Y')
     ax.set_zlabel('Eje Z')
 
-    
     Axes3D.mouse_init
-    
     
     # Crear el canvas y agregarlo al layout del parent
     canvas = FigureCanvas(fig)
@@ -142,6 +143,65 @@ def create_3d_plot(parent):
     toolbar = NavigationToolBar(canvas)
     parent.addWidget(canvas)
     parent.addWidget(toolbar)
+
+def create_3d_plotly(parent):
+    # Datos para el plot
+    x = np.linspace(-5, 5, 100)
+    y = np.linspace(-5, 5, 100)
+    x, y = np.meshgrid(x, y)
+    z1 = np.sin(np.sqrt(x**2 + y**2))
+    z2 = np.cos(np.sqrt(x**2 + y**2))
+    z3 = np.sin(x) * np.cos(y)
+    z4 = np.cos(x) * np.sin(y)
+
+    # Crear subplots
+    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
+                        subplot_titles=("Gráfica 1", "Gráfica 2", "Gráfica 3", "Gráfica 4"))
+
+    # Añadir superficies a los subplots
+    fig.add_trace(plt.Surface(z=z1, x=x, y=y, colorscale='Viridis'), row=1, col=1)
+    fig.add_trace(plt.Surface(z=z2, x=x, y=y, colorscale='Cividis'), row=1, col=2)
+    fig.add_trace(plt.Surface(z=z3, x=x, y=y, colorscale='Inferno'), row=1, col=3)
+    fig.add_trace(plt.Surface(z=z4, x=x, y=y, colorscale='Magma'), row=1, col=4)
+
+    # Ajustar el tamaño de cada gráfica
+    fig.update_layout(
+        title='Superficies 3D',
+        height=350,  # Altura total de la figura
+        width=1500,  # Ancho total de la figura
+        scene=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene2=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene3=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene4=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        )
+    )
+
+    # Guardar la figura en un archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
+        fig.write_html(tmpfile.name)
+        tmpfile.flush()
+        tmpfile.seek(0)
+        html_file = tmpfile.name
+
+    # Crear el QWebEngineView y cargar el archivo HTML
+    web_view = QWebEngineView()
+    web_view.load(QtCore.QUrl.fromLocalFile(html_file))
+    parent.addWidget(web_view)
     
 def create_cylinder_plot(parent):
     fig = Figure()
