@@ -69,7 +69,7 @@ def graphFlexuralShearStress(resultados):
 
     radius = 1
     amplitude = resultados['maximoEsfuerzoCortanteX']
-    drawParabolicVectorsAtCicle(radius, ax, 1)
+    drawParabolicVectorsAtCicle(radius, ax, 0)
     circular_plane(radius, 0, ax)
     ax.set_xlabel('X')
     ax.set_ylabel('Y')
@@ -111,8 +111,7 @@ def drawNormalVectorAtSurface(radius, esfuerzoNormalPromedio, axis, originPlane=
     # Dibujar los vectores normales
     axis.quiver(x, y, z, u, v, w, cmap='viridis', arrow_length_ratio=1/(height*10), alpha=0.5)
 
-#TODO: Revisar
-def drawParabolicVectorsAtCicle(radius, axis, direction=1):
+def drawParabolicVectorsAtCicle(radius, axis, direction=1, invert=True):
     """
     Dibuja vectores paralelos al eje Y o X dependiendo el argumento direction, al rededor de una circunferencia donde su tamaño decrece parabólicamente.
 
@@ -129,7 +128,7 @@ def drawParabolicVectorsAtCicle(radius, axis, direction=1):
     direction = 1 if direction > 0 else -1
 
     # Ángulos para recorrer el círculo
-    theta = np.linspace(0, 2 * np.pi, 100)  # Dividido en 100 puntos
+    theta = np.linspace(0, 2*np.pi, 100)  # Dividido en 100 puntos
 
     # Coordenadas del círculo
     X = radius * np.cos(theta)
@@ -137,15 +136,23 @@ def drawParabolicVectorsAtCicle(radius, axis, direction=1):
     Z = np.zeros_like(X)  # Para que esté en el plano Z=0
 
     # Magnitud de los vectores (parabólica en semicírculo superior)
-    magnitudes = 1 - (np.abs(theta - np.pi) / np.pi)**2  # Parabólica
 
     # Componentes de los vectores
-    if direction == 1:
-        U = magnitudes * np.sign(np.cos(theta))  # Direccionados en X
-        V = np.zeros_like(U)  # Sin componente en Y
+    if invert:
+        invert = 1
     else:
-        U = np.zeros_like(Y)  # Sin componente en X
-        V = magnitudes * np.sign(np.sin(theta))  # Direccionados en Y
+        invert = -1
+    
+    if direction == 1:
+        r= radius * np.sin(theta)
+        magnitudes = (1 - (r / radius)**2)
+        V = invert *np.abs(magnitudes * np.sign(np.cos(theta)))  # Direccionados en -y
+        U = np.zeros_like(Y)  # Sin componente en x
+    else:
+        r= radius * np.cos(theta)
+        magnitudes = (1 - (r / radius)**2)
+        U = invert*np.abs(magnitudes * np.sign(np.sin(theta)))
+        V = np.zeros_like(X)
 
     W = np.zeros_like(Z)  # Sin componente vertical
 

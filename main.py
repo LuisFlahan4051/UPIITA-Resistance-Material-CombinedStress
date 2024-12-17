@@ -1,5 +1,5 @@
 from PySide6 import QtWidgets, QtCore, QtUiTools
-from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox
+from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox, QDialog
 from PySide6.QtWebEngineWidgets import QWebEngineView
 import numpy as np
 from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
@@ -13,15 +13,15 @@ from graph import testGraphFunctions, graphStress, graphNormalStressOfMoment,gra
 from engine import engine, format_eng
 
 def main():
-    # resultados = engine()
+    resultados = engine()
 
-    # graphFlexuralShearStress(resultados)
+    graphFlexuralShearStress(resultados)
     # graphTorsionalShearStress(resultados)
     # graphPerpendicularStress(resultados)
     # graphStress(resultados)
     # graphNormalStressOfMoment(resultados)
     # testGraphFunctions()
-    run_app()
+    #run_app()
     
 def run_app():
     import sys
@@ -48,6 +48,9 @@ def run_app():
     outDataTable.setVerticalHeaderLabels(['Esfuerzo Normal por Mx','Esfuerzo Normal por My','Esfuerzo Normal'])
     setResultValues(outDataTable, engine())
 
+    addLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'addLoadPoint')
+    addLoadPoint.clicked.connect(lambda: show_data_entry_dialog(MainWindow))
+
     add_row_with_checkbox(dataTable)
     
     graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
@@ -64,6 +67,19 @@ def run_app():
     MainWindow.show()
     
     sys.exit(app.exec())
+
+def show_data_entry_dialog(parent):
+    loader = QtUiTools.QUiLoader()
+    file = QtCore.QFile("./addPointForce.ui")
+    file.open(QtCore.QFile.ReadOnly)
+    dialog = loader.load(file, parent)
+    file.close()
+
+    # Conectar el botón de aceptar
+    if dialog.exec() == QDialog.Accepted:
+        
+        # Aquí puedes agregar el código para manejar los datos ingresados
+        print(f"aceptar")
 
 def setResultValues(outDataTable, resultados):
     theta = np.linspace(0,360,100)
