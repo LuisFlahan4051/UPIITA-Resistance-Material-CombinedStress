@@ -5,10 +5,9 @@ import numpy as np
 from plotly.subplots import make_subplots
 import tempfile
 
-from graph import graphStress, graphNormalStressOfMoment,graphNormalStress,graphTorsionalShearStress, graphFlexuralShearStress
 import graph
-from engine import format_eng
 import engine
+from engine import n, u, m, k, M, G, T, cord_x, cord_y, cord_z
 
 def main():
     run_app()
@@ -89,9 +88,9 @@ def setResultValuesToTable(outDataTable, resultados):
     eN = resultados['esfuerzoNormalPromedio']*np.ones_like(theta)
 
     for i in range(0,100):
-        outDataTable.setItem(0, i, QTableWidgetItem(f"{format_eng(eX[i])}"))
-        outDataTable.setItem(1, i, QTableWidgetItem(f"{format_eng(eY[i])}"))
-        outDataTable.setItem(2, i, QTableWidgetItem(f"{format_eng(eN[i])}"))
+        outDataTable.setItem(0, i, QTableWidgetItem(f"{engine.format_eng(eX[i])}"))
+        outDataTable.setItem(1, i, QTableWidgetItem(f"{engine.format_eng(eY[i])}"))
+        outDataTable.setItem(2, i, QTableWidgetItem(f"{engine.format_eng(eN[i])}"))
     
 
 def add_row_with_checkbox(table_widget):

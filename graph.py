@@ -1,19 +1,127 @@
 import numpy as np
-from matplotlib import pyplot as plt 
-import numpy as np
-from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-import mplcursors
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+
+from engine import getENG
 
 
-def getENG(magnitud):
-    exponent = int(np.floor(np.log10(abs(magnitud)) / 3) * 3)
-    mantissa = magnitud / (10 ** exponent)
-    return mantissa, exponent
+" ------------------ graph functions ------------------ "
 
+def graphTorsionalShearStress(resultados,radius=1):
+    radius = 1
+    amplitude = resultados['maximoEsfuerzoCortanteTorsion']
+    fig = go.Figure()
+    tangentVectorsAtCircle(fig,radius)
+    circular_plane(radius, 0, fig)
+    fig.update_layout(
+        title='Esfuerzo Cortante Torsional',
+        scene=dict(
+            xaxis=dict(range=[-radius * 2, radius * 2]),  # Ajustar el rango de los ejes
+            yaxis=dict(range=[-radius * 2, radius * 2]),  # Ajustar el rango de los ejes
+            zaxis=dict(range=[-amplitude, amplitude]),    # Ajustar el rango de los ejes
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z',
+        )
+    )
+    return fig
 
+def graphFlexuralShearStress(resultados, radius=1, direction=1):
+    radius = 1
+    amplitude = resultados['maximoEsfuerzoCortanteX']
+    fig = go.Figure()
+    drawParabolicVectorsAtCicle(fig,radius, direction=direction)
+    circular_plane(radius, 0, fig)
+    fig.update_layout(
+        title='Esfuerzo Cortante Flexional',
+        scene=dict(
+            xaxis=dict(range=[-radius * 2, radius * 2]),  # Ajustar el rango de los ejes
+            yaxis=dict(range=[-radius * 2, radius * 2]),
+            zaxis=dict(range=[-2, 2]),
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z'
+        ),
+        showlegend=False
+    )
+    return fig
+
+def graphNormalStress(resultados, radius=1, density=20):
+    radius, radiusExponent = getENG(radius)
+    normalStress = resultados['esfuerzoNormalPromedio']
+    normalStress, exponentStress = getENG(normalStress)
+
+    fig = go.Figure()
+    drawNormalVectorAtSurface(fig,radius, normalStress, 0, normalStress, density)
+    circular_plane(radius, 0, fig)
+    circular_plane(radius, normalStress, fig, alpha=0.1)
+    # fig.update_layout(
+    #     title='Esfuerzo Normal Perpendicular',
+    #     scene=dict(
+    #         xaxis=dict(range=[-radius, radius]),
+    #         yaxis=dict(range=[-radius, radius]),
+    #         zaxis=dict(range=[0, normalStress]),
+    #         xaxis_title='X',
+    #         yaxis_title='Y',
+    #         zaxis_title='Z'
+    #     ),
+    #     showlegend=False
+    # )
+    # # Agregar etiquetas para los exponentes
+    # fig.add_annotation(
+    #     x=0, y=0, xref='paper', yref='paper',
+    #     text=f'Escala Mx: e{np.abs(exponentStress)} \n Escala Radio: e{radiusExponent}',
+    #     showarrow=False, font=dict(size=12)
+    # )
+    return fig
+
+def graphStress(resultados):
+    theta = np.linspace(0, 360, 100)
+    eX = resultados['maximoEsfuerzoNormalFlexionanteX'] * np.sin(np.radians(theta))
+    eY = resultados['maximoEsfuerzoNormalFlexionanteY'] * np.cos(np.radians(theta))
+    eN = resultados['esfuerzoNormalPromedio'] * np.ones_like(theta)
+
+    fig1 = go.Figure()
+    fig2 = go.Figure()
+    fig3 = go.Figure()
+    # Pintar el área debajo de la curva y agregar vectores perpendiculares
+    fig1.add_trace(go.Scatter(x=theta, y=eX, mode='lines', name='Esfuerzo Normal por Mx', line=dict(color='blue'), fill='tozeroy'))
+    fig2.add_trace(go.Scatter(x=theta, y=eY, mode='lines', name='Esfuerzo Normal por My', line=dict(color='green'), fill='tozeroy'))
+    fig3.add_trace(go.Scatter(x=theta, y=eN, mode='lines', name='Esfuerzo Normal', line=dict(color='red'), fill='tozeroy'))
+    
+    return fig1, fig2, fig3
+
+def graphNormalStressOfMoment(resultados, radius=1):
+    radius, radius_exponent = getENG(radius)
+    # fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]], subplot_titles=("Esfuerzo Normal por Mx", "Esfuerzo Normal por My"))
+
+    amplitude_x = resultados['maximoEsfuerzoNormalFlexionanteX']
+    amplitude_x, exponent_x = getENG(amplitude_x)
+
+    amplitude_y = resultados['maximoEsfuerzoNormalFlexionanteY']
+    amplitude_y, exponent_y = getENG(amplitude_y)
+
+    fig1 = waveAtCylinder(radius, amplitude_x, 1, 0)
+    circular_plane(radius, 0, fig1)
+    fig2 = waveAtCylinder(radius, amplitude_y, 1, np.pi/2)
+    circular_plane(radius, 0, fig2)
+
+    # for trace in fig1.data:
+    #     fig.add_trace(trace, row=1, col=1)
+    # for trace in fig2.data:
+    #     fig.add_trace(trace, row=1, col=2)
+
+    # Agregar etiquetas para los exponentes
+    # fig.add_annotation(
+    #     x=0, y=0, xref='paper', yref='paper',
+    #     text=f'Escala Mx: e{np.abs(exponent_x)} \n Escala Radio: e{radius_exponent}',
+    #     showarrow=False, font=dict(size=12)
+    # )
+
+    # fig.update_layout(height=600, width=1200, title_text="Esfuerzo Normal por Momento")
+    # fig.show()
+    return fig1, fig2
+
+" ------------------ drawing functions ------------------ "
 def drawQuiverPlotly(fig, x, y, z, u, v, w, cone_height=0.1, colorscale='Viridis', sizeref=0.2):
     """
     Dibuja vectores en un gráfico 3D de Plotly utilizando Cone para las puntas.
@@ -87,46 +195,6 @@ def tangentVectorsAtCircle(fig,radius, zDirection=1):
     drawQuiverPlotly(fig, x=X, y=Y, z=Z, u=U, v=V, w=W, sizeref=0.1)  # Ajustar el tamaño de los vectores
     return fig
 
-def graphTorsionalShearStress(resultados,radius=1):
-    radius = 1
-    amplitude = resultados['maximoEsfuerzoCortanteTorsion']
-    fig = go.Figure()
-    tangentVectorsAtCircle(fig,radius)
-    circular_plane(radius, 0, fig)
-    fig.update_layout(
-        title='Esfuerzo Cortante Torsional',
-        scene=dict(
-            xaxis=dict(range=[-radius * 2, radius * 2]),  # Ajustar el rango de los ejes
-            yaxis=dict(range=[-radius * 2, radius * 2]),  # Ajustar el rango de los ejes
-            zaxis=dict(range=[-amplitude, amplitude]),    # Ajustar el rango de los ejes
-            xaxis_title='X',
-            yaxis_title='Y',
-            zaxis_title='Z',
-        )
-    )
-    return fig
-
-def graphFlexuralShearStress(resultados, radius=1, direction=1):
-    radius = 1
-    amplitude = resultados['maximoEsfuerzoCortanteX']
-    fig = go.Figure()
-    drawParabolicVectorsAtCicle(fig,radius, direction=direction)
-    circular_plane(radius, 0, fig)
-    fig.update_layout(
-        title='Esfuerzo Cortante Flexional',
-        scene=dict(
-            xaxis=dict(range=[-radius * 2, radius * 2]),  # Ajustar el rango de los ejes
-            yaxis=dict(range=[-radius * 2, radius * 2]),
-            zaxis=dict(range=[-2, 2]),
-            xaxis_title='X',
-            yaxis_title='Y',
-            zaxis_title='Z'
-        ),
-        showlegend=False
-    )
-    return fig
-
-
 def drawParabolicVectorsAtCicle(fig,radius, direction=1, invert=True):
     """
     Dibuja vectores paralelos al eje Y o X dependiendo el argumento direction, al rededor de una circunferencia donde su tamaño decrece parabólicamente.
@@ -190,36 +258,6 @@ def drawNormalVectorAtSurface(fig,radius, esfuerzoNormalPromedio, originPlane=0,
 
     drawQuiverPlotly(fig, x.flatten(), y.flatten(), z.flatten(), u.flatten(), v.flatten(), w.flatten(), sizeref=height/10)
 
-def graphNormalStress(resultados, radius=1, density=20):
-    radius, radiusExponent = getENG(radius)
-    normalStress = resultados['esfuerzoNormalPromedio']
-    normalStress, exponentStress = getENG(normalStress)
-
-    fig = go.Figure()
-    drawNormalVectorAtSurface(fig,radius, normalStress, 0, normalStress, density)
-    circular_plane(radius, 0, fig)
-    circular_plane(radius, normalStress, fig, alpha=0.1)
-    # fig.update_layout(
-    #     title='Esfuerzo Normal Perpendicular',
-    #     scene=dict(
-    #         xaxis=dict(range=[-radius, radius]),
-    #         yaxis=dict(range=[-radius, radius]),
-    #         zaxis=dict(range=[0, normalStress]),
-    #         xaxis_title='X',
-    #         yaxis_title='Y',
-    #         zaxis_title='Z'
-    #     ),
-    #     showlegend=False
-    # )
-    # # Agregar etiquetas para los exponentes
-    # fig.add_annotation(
-    #     x=0, y=0, xref='paper', yref='paper',
-    #     text=f'Escala Mx: e{np.abs(exponentStress)} \n Escala Radio: e{radiusExponent}',
-    #     showarrow=False, font=dict(size=12)
-    # )
-    return fig
-
-
 def drawVector2D(fig, x_start, y_start, x_end, y_end, color='blue'):
     """
     Dibuja un vector en un gráfico 2D de Plotly utilizando una línea y un triángulo para la punta.
@@ -257,54 +295,6 @@ def drawVector2D(fig, x_start, y_start, x_end, y_end, color='blue'):
         line=dict(color=color),
         mode='lines'
     ))
-
-def graphStress(resultados):
-    theta = np.linspace(0, 360, 100)
-    eX = resultados['maximoEsfuerzoNormalFlexionanteX'] * np.sin(np.radians(theta))
-    eY = resultados['maximoEsfuerzoNormalFlexionanteY'] * np.cos(np.radians(theta))
-    eN = resultados['esfuerzoNormalPromedio'] * np.ones_like(theta)
-
-    fig1 = go.Figure()
-    fig2 = go.Figure()
-    fig3 = go.Figure()
-    # Pintar el área debajo de la curva y agregar vectores perpendiculares
-    fig1.add_trace(go.Scatter(x=theta, y=eX, mode='lines', name='Esfuerzo Normal por Mx', line=dict(color='blue'), fill='tozeroy'))
-    fig2.add_trace(go.Scatter(x=theta, y=eY, mode='lines', name='Esfuerzo Normal por My', line=dict(color='green'), fill='tozeroy'))
-    fig3.add_trace(go.Scatter(x=theta, y=eN, mode='lines', name='Esfuerzo Normal', line=dict(color='red'), fill='tozeroy'))
-    
-    return fig1, fig2, fig3
-
-
-def graphNormalStressOfMoment(resultados, radius=1):
-    radius, radius_exponent = getENG(radius)
-    # fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]], subplot_titles=("Esfuerzo Normal por Mx", "Esfuerzo Normal por My"))
-
-    amplitude_x = resultados['maximoEsfuerzoNormalFlexionanteX']
-    amplitude_x, exponent_x = getENG(amplitude_x)
-
-    amplitude_y = resultados['maximoEsfuerzoNormalFlexionanteY']
-    amplitude_y, exponent_y = getENG(amplitude_y)
-
-    fig1 = waveAtCylinder(radius, amplitude_x, 1, 0)
-    circular_plane(radius, 0, fig1)
-    fig2 = waveAtCylinder(radius, amplitude_y, 1, np.pi/2)
-    circular_plane(radius, 0, fig2)
-
-    # for trace in fig1.data:
-    #     fig.add_trace(trace, row=1, col=1)
-    # for trace in fig2.data:
-    #     fig.add_trace(trace, row=1, col=2)
-
-    # Agregar etiquetas para los exponentes
-    # fig.add_annotation(
-    #     x=0, y=0, xref='paper', yref='paper',
-    #     text=f'Escala Mx: e{np.abs(exponent_x)} \n Escala Radio: e{radius_exponent}',
-    #     showarrow=False, font=dict(size=12)
-    # )
-
-    # fig.update_layout(height=600, width=1200, title_text="Esfuerzo Normal por Momento")
-    # fig.show()
-    return fig1, fig2
 
 def waveAtCylinder(radius, amplitude, cycles, phase, alpha=0.5):
     """
@@ -399,3 +389,5 @@ def circular_plane(radius, height, fig, alpha=0.5):
     z = np.ones_like(x) * height
 
     fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale='Viridis', opacity=alpha, showlegend=False, showscale=False))
+
+

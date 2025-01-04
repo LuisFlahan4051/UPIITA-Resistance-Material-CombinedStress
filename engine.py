@@ -81,6 +81,11 @@ def parse_eng(value_str):
     exponent = prefixes[prefix]
     return mantissa * (10 ** exponent)
 
+def getENG(magnitud):
+    exponent = int(np.floor(np.log10(abs(magnitud)) / 3) * 3)
+    mantissa = magnitud / (10 ** exponent)
+    return mantissa, exponent
+
 class Profile:
     def __init__(self, profile_type, dimension1, dimension2=None):
         self.profile_type = profile_type
