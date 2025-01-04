@@ -13,7 +13,7 @@ def getENG(magnitud):
     mantissa = magnitud / (10 ** exponent)
     return mantissa, exponent
 
-#TODO: corregir tamaño de los conos en los vectores
+
 def drawQuiverPlotly(fig, x, y, z, u, v, w, cone_height=0.1, colorscale='Viridis', sizeref=0.2):
     """
     Dibuja vectores en un gráfico 3D de Plotly utilizando Cone para las puntas.
@@ -44,7 +44,9 @@ def drawQuiverPlotly(fig, x, y, z, u, v, w, cone_height=0.1, colorscale='Viridis
             u=cone_u, v=cone_v, w=cone_w,
             colorscale=colorscale,
             sizemode='absolute',
-            sizeref=sizeref
+            sizeref=sizeref,
+            showscale=False,
+            showlegend=False
         ))
 
         # Dibujar el cilindro (cuerpo del vector) usando líneas
@@ -53,7 +55,8 @@ def drawQuiverPlotly(fig, x, y, z, u, v, w, cone_height=0.1, colorscale='Viridis
             y=[y_start, y_end],
             z=[z_start, z_end],
             mode='lines',
-            line=dict(color='blue', width=5)
+            line=dict(color='blue', width=5),
+            showlegend=False
         ))
 
 def tangentVectorsAtCircle(fig,radius, zDirection=1):
@@ -98,7 +101,7 @@ def graphTorsionalShearStress(resultados):
             zaxis=dict(range=[-amplitude, amplitude]),    # Ajustar el rango de los ejes
             xaxis_title='X',
             yaxis_title='Y',
-            zaxis_title='Z'
+            zaxis_title='Z',
         )
     )
     fig.show()
@@ -118,7 +121,8 @@ def graphFlexuralShearStress(resultados):
             xaxis_title='X',
             yaxis_title='Y',
             zaxis_title='Z'
-        )
+        ),
+        showlegend=False
     )
     fig.show()
 
@@ -204,7 +208,8 @@ def graphPerpendicularStress(resultados, radius=1):
             xaxis_title='X',
             yaxis_title='Y',
             zaxis_title='Z'
-        )
+        ),
+        showlegend=False
     )
     # Agregar etiquetas para los exponentes
     fig.add_annotation(
@@ -335,7 +340,7 @@ def waveAtCylinder(radius, amplitude, cycles, phase, alpha=0.5):
 
 
     fig = go.Figure()
-    fig.add_trace(go.Surface(x=X, y=Y, z=Z, colorscale='Viridis', opacity=alpha))
+    fig.add_trace(go.Surface(x=X, y=Y, z=Z, colorscale='Viridis', opacity=alpha,showlegend=False,showscale=False))
     drawQuiverPlotly(fig, x=X_vec, y=Y_vec, z=Z_vec, u=U, v=V, w=W, sizeref=amplitude/10 )
     return fig
 
@@ -374,7 +379,7 @@ def cylinder(origin, radius, height, fig):
     x = radius * np.cos(theta)
     y = radius * np.sin(theta)
 
-    fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale='Viridis'))
+    fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale='Viridis',showlegend=False,showscale=False))
 
 def circular_plane(radius, height, fig, alpha=0.5):
     """
@@ -396,4 +401,4 @@ def circular_plane(radius, height, fig, alpha=0.5):
     y = radius * np.sin(theta)
     z = np.ones_like(x) * height
 
-    fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale='Viridis', opacity=alpha))
+    fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale='Viridis', opacity=alpha, showlegend=False, showscale=False))
