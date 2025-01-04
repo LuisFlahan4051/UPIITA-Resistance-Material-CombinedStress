@@ -38,7 +38,10 @@ def run_app():
     setResultValuesToTable(outDataTable, engine.engine())
 
     addLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'addLoadPoint')
-    addLoadPoint.clicked.connect(lambda: show_data_entry_dialog(MainWindow))
+    addLoadPoint.clicked.connect(lambda: showLoadPointEntry(MainWindow))
+
+    addBar = MainWindow.findChild(QtWidgets.QPushButton, 'addBar')
+    addBar.clicked.connect(lambda: showBarEntry(MainWindow))
 
     add_row_with_checkbox(dataTable)
     
@@ -68,9 +71,22 @@ def run_app():
     
     sys.exit(app.exec())
 
-def show_data_entry_dialog(parent):
+def showLoadPointEntry(parent):
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("./addPointForce.ui")
+    file.open(QtCore.QFile.ReadOnly)
+    dialog = loader.load(file, parent)
+    file.close()
+
+    # Conectar el botón de aceptar
+    if dialog.exec() == QDialog.Accepted:
+        
+        # Aquí puedes agregar el código para manejar los datos ingresados
+        print(f"aceptar")
+
+def showBarEntry(parent):
+    loader = QtUiTools.QUiLoader()
+    file = QtCore.QFile("./addBar.ui")
     file.open(QtCore.QFile.ReadOnly)
     dialog = loader.load(file, parent)
     file.close()
@@ -188,7 +204,7 @@ def plotNormalStress():
                         subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
 
     # Añadir superficies a los subplots
-    fig1 = graphNormalStress(results, radius=profile.radius, density=10)
+    fig1 = graph.graphNormalStress(results, radius=profile.radius, density=10)
     fig3, fig2= graph.graphNormalStressOfMoment(results,radius=profile.radius)
 
     for trace in fig1.data:
