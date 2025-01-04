@@ -2,25 +2,16 @@ from PySide6 import QtWidgets, QtCore, QtUiTools
 from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox, QDialog
 from PySide6.QtWebEngineWidgets import QWebEngineView
 import numpy as np
-from matplotlib.backends.backend_qtagg import FigureCanvasQTAgg as FigureCanvas, NavigationToolbar2QT as NavigationToolBar
-from matplotlib.figure import Figure
-from mpl_toolkits.mplot3d import Axes3D
-import plotly.graph_objects as plt
 from plotly.subplots import make_subplots
 import tempfile
 
-from graph import graphStress, graphNormalStressOfMoment,graphPerpendicularStress,graphTorsionalShearStress, graphFlexuralShearStress
-from engine import engine, format_eng
+from graph import graphStress, graphNormalStressOfMoment,graphNormalStress,graphTorsionalShearStress, graphFlexuralShearStress
+import graph
+from engine import format_eng
+import engine
 
 def main():
-    resultados = engine()
-
-    # graphFlexuralShearStress(resultados)
-    # graphTorsionalShearStress(resultados)
-    graphPerpendicularStress(resultados)
-    # graphStress(resultados)
-    graphNormalStressOfMoment(resultados)
-    #run_app()
+    run_app()
     
 def run_app():
     import sys
@@ -45,7 +36,7 @@ def run_app():
     outDataTable.setColumnCount(100)
     outDataTable.setRowCount(3)
     outDataTable.setVerticalHeaderLabels(['Esfuerzo Normal por Mx','Esfuerzo Normal por My','Esfuerzo Normal'])
-    setResultValues(outDataTable, engine())
+    setResultValuesToTable(outDataTable, engine.engine())
 
     addLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'addLoadPoint')
     addLoadPoint.clicked.connect(lambda: show_data_entry_dialog(MainWindow))
@@ -53,15 +44,26 @@ def run_app():
     add_row_with_checkbox(dataTable)
     
     graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
-    graphLayout2 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout2')
-    graphLayout3 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout3')
-    graphLayout4 = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout4')
+    web_view = QWebEngineView()
+    graphLayout.addWidget(web_view)
 
     
-    create_3d_plotly(graphLayout)
-    # create_cylinder_plot(graphLayout2)
-    # create_3d_plot(graphLayout3)
-    # create_3d_plot(graphLayout4)
+    
+    normalStress = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress')
+    normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
+    shearStress = MainWindow.findChild(QtWidgets.QRadioButton, 'shearStress')
+    
+    plot1 = plotNormalStress()
+    plot2 = plotShearStress()
+    plot3 = plotNormalStress2D(engine.engine())
+
+    normalStress.toggled.connect(lambda: (
+        web_view.load(QtCore.QUrl.fromLocalFile(plot1))))
+    shearStress.toggled.connect(lambda: (
+        web_view.load(QtCore.QUrl.fromLocalFile(plot2))))
+    normalStress2D.toggled.connect(lambda: (
+        web_view.load(QtCore.QUrl.fromLocalFile(plot3))))
+
 
     MainWindow.show()
     
@@ -80,7 +82,7 @@ def show_data_entry_dialog(parent):
         # Aquí puedes agregar el código para manejar los datos ingresados
         print(f"aceptar")
 
-def setResultValues(outDataTable, resultados):
+def setResultValuesToTable(outDataTable, resultados):
     theta = np.linspace(0,360,100)
     eX = resultados['maximoEsfuerzoNormalFlexionanteX']*np.sin(np.radians(theta))
     eY = resultados['maximoEsfuerzoNormalFlexionanteY']*np.cos(np.radians(theta))
@@ -130,25 +132,134 @@ def add_row_with_checkbox(table_widget):
     table_widget.setItem(row_count, 1, QTableWidgetItem("Dato 1"))
     table_widget.setItem(row_count, 2, QTableWidgetItem("Dato 2"))
 
-def create_3d_plotly(parent):
-    # Datos para el plot
-    x = np.linspace(-5, 5, 100)
-    y = np.linspace(-5, 5, 100)
-    x, y = np.meshgrid(x, y)
-    z1 = np.sin(np.sqrt(x**2 + y**2))
-    z2 = np.cos(np.sqrt(x**2 + y**2))
-    z3 = np.sin(x) * np.cos(y)
-    z4 = np.cos(x) * np.sin(y)
+def plotNormalStress2D(results):
+    fig = make_subplots(rows=1, cols=4,
+        subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
 
-    # Crear subplots
-    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=("Gráfica 1", "Gráfica 2", "Gráfica 3", "Gráfica 4"))
+    fig3, fig2, fig1 =graph.graphStress(results)
 
-    # Añadir superficies a los subplots
+    for trace in fig1.data:
+        fig.add_trace(trace, row=1, col=1)
+    for trace in fig2.data:
+        fig.add_trace(trace, row=1, col=2)
+    for trace in fig3.data:
+        fig.add_trace(trace, row=1, col=3)
     
     # Ajustar el tamaño de cada gráfica
     fig.update_layout(
-        title='Superficies 3D',
+        title='Esfuerzos Normales',
+        height=350,  # Altura total de la figura
+        width=1500,  # Ancho total de la figura
+        scene=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+        ),
+        scene2=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y'
+        ),
+        scene3=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y'
+        ),
+        scene4=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y'
+        )
+    )
+    
+    # Ajustar el formato de los ejes Y
+    fig.update_yaxes(tickformat=".1e")
+
+    # Guardar la figura en un archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
+        fig.write_html(tmpfile.name)
+        tmpfile.flush()
+        tmpfile.seek(0)
+        html_file = tmpfile.name
+
+    return html_file
+
+def plotNormalStress():
+    profile = engine.Profile('circle',40*10**-3)
+    results = engine.engine()
+
+    # Crear subplots
+    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
+                        subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
+
+    # Añadir superficies a los subplots
+    fig1 = graphNormalStress(results, radius=profile.radius, density=10)
+    fig3, fig2= graph.graphNormalStressOfMoment(results,radius=profile.radius)
+
+    for trace in fig1.data:
+        fig.add_trace(trace, row=1, col=1)
+    for trace in fig2.data:
+        fig.add_trace(trace, row=1, col=2)
+    for trace in fig3.data:
+        fig.add_trace(trace, row=1, col=3)
+
+    
+    # Ajustar el tamaño de cada gráfica
+    fig.update_layout(
+        title='Esfuerzos Normales',
+        height=350,  # Altura total de la figura
+        width=1500,  # Ancho total de la figura
+        scene=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene2=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene3=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene4=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        )
+    )
+
+    # Guardar la figura en un archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
+        fig.write_html(tmpfile.name)
+        tmpfile.flush()
+        tmpfile.seek(0)
+        html_file = tmpfile.name
+
+    return html_file
+    
+def plotShearStress():
+    profile = engine.Profile('circle',40*10**-3)
+    results = engine.engine()
+
+    # Crear subplots
+    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
+                        subplot_titles=("Esfuerzo Cortante Flexión", "Esfuerzo Cortante Flexión", "Esfuerzo Esfuerzo Torsión", "Gráfica 4"))
+
+    # Añadir superficies a los subplots
+    fig1 = graph.graphFlexuralShearStress(results, radius=profile.radius)
+    fig2 = graph.graphFlexuralShearStress(results, radius=profile.radius, direction=-1)
+    fig3 = graph.graphTorsionalShearStress(results, radius=profile.radius)
+
+    for trace in fig1.data:
+        fig.add_trace(trace, row=1, col=1)
+    for trace in fig2.data:
+        fig.add_trace(trace, row=1, col=2)
+    for trace in fig3.data:
+        fig.add_trace(trace, row=1, col=3)
+
+    
+    # Ajustar el tamaño de cada gráfica
+    fig.update_layout(
+        title='Esfuerzos Cortantes',
         height=350,  # Altura total de la figura
         width=1500,  # Ancho total de la figura
         scene=dict(
@@ -181,11 +292,10 @@ def create_3d_plotly(parent):
         html_file = tmpfile.name
 
     # Crear el QWebEngineView y cargar el archivo HTML
-    web_view = QWebEngineView()
-    web_view.load(QtCore.QUrl.fromLocalFile(html_file))
-    parent.addWidget(web_view)
     
-
+    # parent.load(QtCore.QUrl.fromLocalFile(html_file))
+    return html_file
+    
 
 if __name__ == '__main__':
     main()
