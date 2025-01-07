@@ -9,10 +9,13 @@ import tempfile
 import graph
 import engine
 from engine import n, u, m, k, M, G, T, cord_x, cord_y, cord_z
+import test
 
 def main():
     run_app()
-    
+
+estructure = go.Figure()
+
 def run_app():
     import sys
     app = QApplication.instance()
@@ -57,10 +60,12 @@ def run_app():
     normalStress = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress')
     normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
     shearStress = MainWindow.findChild(QtWidgets.QRadioButton, 'shearStress')
+    mohrStress = MainWindow.findChild(QtWidgets.QRadioButton, 'mohr')
     
     plot1 = plotNormalStress(results)
     plot2 = plotShearStress(results)
     plot3 = plotNormalStress2D(results)
+    plotMohrFile = plotMohr(results)
 
     normalStress.toggled.connect(lambda: (
         web_view.load(QtCore.QUrl.fromLocalFile(plot1))))
@@ -68,6 +73,12 @@ def run_app():
         web_view.load(QtCore.QUrl.fromLocalFile(plot2))))
     normalStress2D.toggled.connect(lambda: (
         web_view.load(QtCore.QUrl.fromLocalFile(plot3))))
+    
+    mohrStress.toggled.connect(lambda: (
+        web_view.load(QtCore.QUrl.fromLocalFile(plotMohrFile))
+    ))
+
+
 
 
     MainWindow.show()
@@ -81,11 +92,29 @@ def showLoadPointEntry(parent):
     dialog = loader.load(file, parent)
     file.close()
 
+    dialog_fx = dialog.findChild(QtWidgets.QLineEdit, 'dialog_fx')
+    dialog_fy = dialog.findChild(QtWidgets.QLineEdit, 'dialog_fy')
+    dialog_fz = dialog.findChild(QtWidgets.QLineEdit, 'dialog_fz')
+    dialog_px = dialog.findChild(QtWidgets.QLineEdit, 'dialog_px')
+    dialog_py = dialog.findChild(QtWidgets.QLineEdit, 'dialog_py')
+    dialog_pz = dialog.findChild(QtWidgets.QLineEdit, 'dialog_pz')
+    dialog_mx = dialog.findChild(QtWidgets.QLineEdit, 'dialog_mx')
+    dialog_my = dialog.findChild(QtWidgets.QLineEdit, 'dialog_my')
+    dialog_mz = dialog.findChild(QtWidgets.QLineEdit, 'dialog_mz')
+
     # Conectar el botón de aceptar
     if dialog.exec() == QDialog.Accepted:
         
         # Aquí puedes agregar el código para manejar los datos ingresados
         print(f"aceptar")
+
+def updateModule(comboBoxMaterial, moduleE, moduleG):
+    selected_material = comboBoxMaterial.currentText()
+    if selected_material in engine.materials:
+        E_value = engine.materials[selected_material]["E"]
+        moduleE.setText(str(E_value))
+        G_value = engine.materials[selected_material]["G"]
+        moduleG.setText(str(G_value))
 
 def showBarEntry(parent):
     loader = QtUiTools.QUiLoader()
@@ -93,6 +122,55 @@ def showBarEntry(parent):
     file.open(QtCore.QFile.ReadOnly)
     dialog = loader.load(file, parent)
     file.close()
+
+    comboBoxPerfil = dialog.findChild(QtWidgets.QComboBox, 'comboBoxPerfil')
+    comboBoxPerfil.addItem("Circular")
+    comboBoxPerfil.addItem("Rectangular")
+    comboBoxPerfil.addItem("IPR")
+    comboBoxMaterial = dialog.findChild(QtWidgets.QComboBox, 'comboBoxMaterial')
+    for material in engine.materials.keys():
+        comboBoxMaterial.addItem(material)
+    
+    moduleE = dialog.findChild(QtWidgets.QLineEdit, 'moduleE')
+    moduleG = dialog.findChild(QtWidgets.QLineEdit, 'moduleG')
+    
+    # Actualizar el valor del módulo cuando se seleccione un material
+    comboBoxMaterial.currentIndexChanged.connect(lambda: updateModule(comboBoxMaterial, moduleE, moduleG))
+
+    originX = dialog.findChild(QtWidgets.QLineEdit, 'originX')
+    originY = dialog.findChild(QtWidgets.QLineEdit, 'originY')
+    originZ = dialog.findChild(QtWidgets.QLineEdit, 'originZ')
+    endX = dialog.findChild(QtWidgets.QLineEdit, 'endX')
+    endY = dialog.findChild(QtWidgets.QLineEdit, 'endY')
+    endZ = dialog.findChild(QtWidgets.QLineEdit, 'endZ')
+    comboBoxNormalAxis = dialog.findChild(QtWidgets.QComboBox, 'comboBoxNormalAxis')
+    comboBoxNormalAxis.addItem("x")
+    comboBoxNormalAxis.addItem("y")
+    comboBoxNormalAxis.addItem("z")
+
+
+    # Circular Perfil
+    internalDiameter = dialog.findChild(QtWidgets.QLineEdit, 'internalDiameter')
+    externalDiameter = dialog.findChild(QtWidgets.QLineEdit, 'externalDiameter')
+
+    # Rectangular Perfil
+    side1 = dialog.findChild(QtWidgets.QLineEdit, 'side1')
+    side2 = dialog.findChild(QtWidgets.QLineEdit, 'side2')
+    comboBoxRHAxis = dialog.findChild(QtWidgets.QComboBox, 'comboBoxRHAxis')
+    comboBoxRHAxis.addItem("x")
+    comboBoxRHAxis.addItem("y")
+    comboBoxRHAxis.addItem("z")
+
+    # IPR Perfil
+    peralte = dialog.findChild(QtWidgets.QLineEdit, 'peralte')
+    widthPeralte = dialog.findChild(QtWidgets.QLineEdit, 'widthPeralte')
+    patin = dialog.findChild(QtWidgets.QLineEdit, 'patin')
+    widthPatin = dialog.findChild(QtWidgets.QLineEdit, 'widthPatin')
+    comboBoxIPRHAxis = dialog.findChild(QtWidgets.QComboBox, 'comboBoxIPRHAxis')
+    comboBoxIPRHAxis.addItem("x")
+    comboBoxIPRHAxis.addItem("y")
+    comboBoxIPRHAxis.addItem("z")
+
 
     # Conectar el botón de aceptar
     if dialog.exec() == QDialog.Accepted:
@@ -156,7 +234,7 @@ def plotNormalStress2D(results):
 
     fig3, fig2, fig1 =graph.graphStress(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], results["esfuerzoNormalPromedio"])
 
-    
+
 
     for trace in fig1.data:
         fig.add_trace(trace, row=1, col=1)
@@ -215,6 +293,9 @@ def plotNormalStress(results):
     fig4 = go.Figure()
     # graph.drawPrismPointToPoint([0,0,0],[1,1,1],1,2,fig4)
     graph.drawIPRprofile([0, 0, 0], [1, 1, 1], 0.2, 0.5, 0.8,fig4)
+    graph.drawArrowMoment([1, 1, 1], fig4, axis='y', invertDirection=True)
+    
+
 
 
 
@@ -323,7 +404,71 @@ def plotShearStress(results):
     
     # parent.load(QtCore.QUrl.fromLocalFile(html_file))
     return html_file
-    
+
+def plotMohr(results):
+    # Extraer los valores necesarios de los resultados
+    # sigma_x = results['sigma_x']
+    # sigma_y = results['sigma_y']
+    # sigma_z = results['sigma_z']
+    # tau_xy = results['tau_xy']
+    # tau_yz = results['tau_yz']
+    # tau_zx = results['tau_zx']
+    sigma_x = 100
+    sigma_y = 50
+    sigma_z = 30
+    tau_xy = 25
+    tau_yz = 15
+    tau_zx = 10
+
+    # Crear subplots
+    fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'xy'}, {'type': 'surface'}, {'type': 'surface'}]],
+                        subplot_titles=("Círculo de Mohr 2D", "Círculo de Mohr 3D", "Círculo de Mohr 3D Esferas"))
+
+    # Graficar Círculo de Mohr 2D
+    fig1 = test.graficar_circulo_mohr(sigma_x, sigma_y, tau_xy)
+    for trace in fig1.data:
+        fig.add_trace(trace, row=1, col=1)
+
+    # Graficar Círculo de Mohr 3D
+    fig2 = test.graficar_circulo_mohr_3d(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_zx)
+    for trace in fig2.data:
+        fig.add_trace(trace, row=1, col=2)
+
+    # Graficar Círculo de Mohr 3D Esferas
+    fig3 = test.graficar_circulo_mohr_3d_esferas(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_zx)
+    for trace in fig3.data:
+        fig.add_trace(trace, row=1, col=3)
+
+    # Ajustar el tamaño de cada gráfica
+    fig.update_layout(
+        title='Círculo de Mohr',
+        height=600,  # Altura total de la figura
+        width=1800,  # Ancho total de la figura
+        scene=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene2=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene3=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        )
+    )
+
+    # Guardar la figura en un archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
+        fig.write_html(tmpfile.name)
+        tmpfile.flush()
+        tmpfile.seek(0)
+        html_file = tmpfile.name
+
+    return html_file   
 
 if __name__ == '__main__':
     main()

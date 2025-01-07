@@ -105,6 +105,36 @@ class Profile:
             self.momentY = (self.height * (self.width**3)) / 12
             self.momentZ = self.momentX + self.momentY
 
+# Definir los materiales y sus propiedades
+materials = {
+    "Acero Estructural (ASTM-A36)": {"E": 200, "G": 77.2},
+    "Acero Alta resistencia-baja aleación ASTM-A709 Grado 345": {"E": 200, "G": 77.2},
+    "Acero Alta resistencia-baja aleación ASTM-A913 Grado 450": {"E": 200, "G": 77.2},
+    "Acero Alta resistencia-baja aleación ASTM-A992 Grado 345": {"E": 200, "G": 77.2},
+    "Acero Templado ASTM-A709 Grado 690": {"E": 200, "G": 77.2},
+    "Acero Inoxidable, AISI 302 Laminado en frio": {"E": 190, "G": 75},
+    "Acero Inoxidable, AISI 302 Recocido": {"E": 190, "G": 75},
+    "Acero de refuerzo Resistencia media": {"E": 200, "G": 77},
+    "Acero de refuerzo Alta resistencia": {"E": 200, "G": 77},
+    "Hierro fundido Hierro fundido gris 4.5% C. ASTM A-48": {"E": 69, "G": 28},
+    "Hierro fundido Hierro fundido maleable 2% C, 1% Si. ASTM A-47": {"E": 165, "G": 65},
+    "Aluminio Aleación 1100-H14 (99% Al)": {"E": 70, "G": 26},
+    "Aluminio Aleación 2014-T6": {"E": 75, "G": 27},
+    "Aluminio Alcación 2024-T4": {"E": 73, "G": None},
+    "Aluminio Aleación 5456-H116": {"E": 72, "G": None},
+    "Aluminio Aleación 6061-T6": {"E": 70, "G": 26},
+    "Aluminio Aleación 7075-T6": {"E": 72, "G": 28},
+    "Cobre Cobre libre de oxigeno (99.9% Cu) Recocido": {"E": 120, "G": 44},
+    "Cobre Cobre libre de oxigeno (99.9% Cu) Endurecido": {"E": 120, "G": 44},
+    "Cobre Latón amarillo (65% Cu. 35% Zn) Laminado en frio": {"E": 105, "G": 39},
+    "Cobre Latón amarillo (65% Cu. 35% Zn) Recocido": {"E": 105, "G": 39},
+    "Cobre Latón rojo (85% Cu. 15% Zn) Laminado en frio": {"E": 120, "G": 44},
+    "Cobre Latón rojo (85% Cu. 15% Zn) Recocido": {"E": 120, "G": 44},
+    "Cobre Estaño bronce (88 Cu, 8Sn, 4Zn)": {"E": 95, "G": None},
+    "Cobre Manganeso bronce (63 Cu, 25 Zn, 6 Al, 3 Mn. 3 Fe)": {"E": 105, "G": None},
+    "Cobre Aluminio bronce (81 Cu, 4 Ni, 4 Fe, 11 Al)": {"E": 110, "G": 42}
+}
+
 "------------------------ FUNCTIONS ------------------------"
 
 def esfuerzoCortantePorFlexionEnAngulo(maximoEsfuerzoCortante, gradoObservacion, radio, type='circle'):

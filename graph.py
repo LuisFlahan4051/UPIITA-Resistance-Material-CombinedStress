@@ -569,3 +569,67 @@ def drawIPRprofile(initial_point, final_point, alma_width, patin_width, peralte,
             color='red',
             opacity=0.5
         ))
+
+def drawArrowMoment(point, fig, radius=1, axis="x", invertDirection=False):
+    # Convert point to numpy array
+    point = np.array(point)
+    
+    # Define the arrow's direction
+    if axis == "x":
+        angle = np.linspace(0, 1.5 * np.pi, 100)  # Circle not closed completely
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        z = np.zeros_like(x)
+        u, v, w = [1, 0, 0]
+    elif axis == "y":
+        angle = np.linspace(0, 1.5 * np.pi, 100)
+        x = radius * np.cos(angle)
+        z = radius * np.sin(angle)
+        y = np.zeros_like(x)
+        u, v, w = [0, 1, 0]
+    else:
+        angle = np.linspace(0, 1.5 * np.pi, 100)
+        y = radius * np.cos(angle)
+        z = radius * np.sin(angle)
+        x = np.zeros_like(y)
+        u, v, w = [0, 0, 1]
+    
+    # Invert the direction if needed
+    if invertDirection:
+        angle = -angle
+        x = radius * np.cos(angle)
+        y = radius * np.sin(angle)
+        z = np.zeros_like(x)
+        if axis == "x":
+            u, v, w = [-1, 0, 0]
+        elif axis == "y":
+            u, v, w = [0, -1, 0]
+        else:
+            u, v, w = [0, 0, -1]
+    
+    # Add the arrow to the figure
+    fig.add_trace(go.Scatter3d(x=x + point[0], y=y + point[1], z=z + point[2], mode='lines', line=dict(color='blue', width=5)))
+    
+    # Add the cone at the end of the arrow
+    if invertDirection:
+        fig.add_trace(go.Cone(
+        x=[x[-1] + point[0]], y=[y[-1] + point[1]], z=[z[-1] + point[2]],
+        u=[-u], v=[-v], w=[-w],
+        colorscale='Viridis',
+        sizemode='absolute',
+        sizeref=0.1,
+        showscale=False,
+        showlegend=False
+    ))
+    else:
+        fig.add_trace(go.Cone(
+        x=[x[-1] + point[0]], y=[y[-1] + point[1]], z=[z[-1] + point[2]],
+        u=[u], v=[v], w=[w],
+        colorscale='Viridis',
+        sizemode='absolute',
+        sizeref=0.1,
+        showscale=False,
+        showlegend=False
+    ))
+
+    
