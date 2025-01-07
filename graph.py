@@ -1,14 +1,15 @@
 import numpy as np
 import plotly.graph_objects as go
+from plotly.graph_objects import Mesh3d
 
 from engine import getENG
 
 
 " ------------------ graph functions ------------------ "
 
-def graphTorsionalShearStress(resultados,radius=1):
+def graphTorsionalShearStress(maximoEsfuerzoCortanteTorsion=1, radius=1):
     radius = 1
-    amplitude = resultados['maximoEsfuerzoCortanteTorsion']
+    amplitude = maximoEsfuerzoCortanteTorsion
     fig = go.Figure()
     tangentVectorsAtCircle(fig,radius)
     circular_plane(radius, 0, fig)
@@ -25,9 +26,9 @@ def graphTorsionalShearStress(resultados,radius=1):
     )
     return fig
 
-def graphFlexuralShearStress(resultados, radius=1, direction=1):
+def graphFlexuralShearStress(maximoEsfuerzoCortante=1, radius=1, direction=1):
     radius = 1
-    amplitude = resultados['maximoEsfuerzoCortanteX']
+    amplitude = maximoEsfuerzoCortante
     fig = go.Figure()
     drawParabolicVectorsAtCicle(fig,radius, direction=direction)
     circular_plane(radius, 0, fig)
@@ -45,9 +46,9 @@ def graphFlexuralShearStress(resultados, radius=1, direction=1):
     )
     return fig
 
-def graphNormalStress(resultados, radius=1, density=20):
+def graphNormalStress(esfuerzoNormalPromedio=1, radius=1, density=20):
     radius, radiusExponent = getENG(radius)
-    normalStress = resultados['esfuerzoNormalPromedio']
+    normalStress = esfuerzoNormalPromedio
     normalStress, exponentStress = getENG(normalStress)
 
     fig = go.Figure()
@@ -74,11 +75,11 @@ def graphNormalStress(resultados, radius=1, density=20):
     # )
     return fig
 
-def graphStress(resultados):
+def graphStress(maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY, esfuerzoNormalPromedio, radius=1):
     theta = np.linspace(0, 360, 100)
-    eX = resultados['maximoEsfuerzoNormalFlexionanteX'] * np.sin(np.radians(theta))
-    eY = resultados['maximoEsfuerzoNormalFlexionanteY'] * np.cos(np.radians(theta))
-    eN = resultados['esfuerzoNormalPromedio'] * np.ones_like(theta)
+    eX = maximoEsfuerzoNormalFlexionanteX * np.sin(np.radians(theta))
+    eY = maximoEsfuerzoNormalFlexionanteY * np.cos(np.radians(theta))
+    eN = esfuerzoNormalPromedio * np.ones_like(theta)
 
     fig1 = go.Figure()
     fig2 = go.Figure()
@@ -90,14 +91,14 @@ def graphStress(resultados):
     
     return fig1, fig2, fig3
 
-def graphNormalStressOfMoment(resultados, radius=1):
+def graphNormalStressOfMoment(maximoEsfuerzoNormalFlexionanteX,maximoEsfuerzoNormalFlexionanteY , radius=1):
     radius, radius_exponent = getENG(radius)
     # fig = make_subplots(rows=1, cols=2, specs=[[{'type': 'surface'}, {'type': 'surface'}]], subplot_titles=("Esfuerzo Normal por Mx", "Esfuerzo Normal por My"))
 
-    amplitude_x = resultados['maximoEsfuerzoNormalFlexionanteX']
+    amplitude_x = maximoEsfuerzoNormalFlexionanteX
     amplitude_x, exponent_x = getENG(amplitude_x)
 
-    amplitude_y = resultados['maximoEsfuerzoNormalFlexionanteY']
+    amplitude_y = maximoEsfuerzoNormalFlexionanteY
     amplitude_y, exponent_y = getENG(amplitude_y)
 
     fig1 = waveAtCylinder(radius, amplitude_x, 1, 0)
@@ -120,6 +121,17 @@ def graphNormalStressOfMoment(resultados, radius=1):
     # fig.update_layout(height=600, width=1200, title_text="Esfuerzo Normal por Momento")
     # fig.show()
     return fig1, fig2
+
+def graphEstructure():
+    fig = go.Figure()
+    solid_cylinder(fig, 1, 1)
+    fig.update_layout(
+        title='Estructura de un cilindro sólido',
+        scene=dict(
+            xaxis_title='X',
+            yaxis_title='Y',
+            zaxis_title='Z',
+    ))
 
 " ------------------ drawing functions ------------------ "
 def drawQuiverPlotly(fig, x, y, z, u, v, w, cone_height=0.1, colorscale='Viridis', sizeref=0.2):
@@ -390,4 +402,170 @@ def circular_plane(radius, height, fig, alpha=0.5):
 
     fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale='Viridis', opacity=alpha, showlegend=False, showscale=False))
 
+def drawCylinderPointToPoint(initial_point, final_point, radius, fig):
+    # Convert points to numpy arrays
+    initial_point = np.array(initial_point)
+    final_point = np.array(final_point)
+    
+    # Calculate the vector for the cylinder's axis
+    axis_vector = final_point - initial_point
+    height = np.linalg.norm(axis_vector)
+    axis_unit_vector = axis_vector / height
+    
+    # Define the virtual z and theta in cylindrical coordinates
+    z_virtual = np.linspace(0, height, 20)
+    theta_virtual = np.linspace(0, 2 * np.pi, 100)
+    theta_virtual, z_virtual = np.meshgrid(theta_virtual, z_virtual)
+    
+    # Calculate the virtual x, y in cylindrical coordinates
+    x_virtual = radius * np.cos(theta_virtual)
+    y_virtual = radius * np.sin(theta_virtual)
+    
+    # Convert the cylindrical coordinates to Cartesian coordinates in the local frame
+    cylinder_points = np.array([x_virtual.ravel(), y_virtual.ravel(), z_virtual.ravel()]).T
+    
+    # Find a rotation matrix to align the cylinder with the axis vector
+    z_axis = np.array([0, 0, 1])  # Default axis
+    rotation_axis = np.cross(z_axis, axis_unit_vector)
+    rotation_axis_norm = np.linalg.norm(rotation_axis)
+    
+    if rotation_axis_norm != 0:  # Check if rotation is needed
+        rotation_axis = rotation_axis / rotation_axis_norm
+        angle = np.arccos(np.dot(z_axis, axis_unit_vector))
+        K = np.array([[0, -rotation_axis[2], rotation_axis[1]],
+                      [rotation_axis[2], 0, -rotation_axis[0]],
+                      [-rotation_axis[1], rotation_axis[0], 0]])
+        rotation_matrix = np.eye(3) + np.sin(angle) * K + (1 - np.cos(angle)) * np.dot(K, K)
+    else:
+        rotation_matrix = np.eye(3)
+    
+    # Rotate and translate the points
+    rotated_points = cylinder_points @ rotation_matrix.T
+    final_points = rotated_points + initial_point
+    
+    # Reshape for plotting
+    x = final_points[:, 0].reshape(x_virtual.shape)
+    y = final_points[:, 1].reshape(y_virtual.shape)
+    z = final_points[:, 2].reshape(z_virtual.shape)
+    
+    # Add the cylinder to the figure
+    fig.add_trace(go.Surface(x=x, y=y, z=z, colorscale="Viridis"))
 
+def drawPrismPointToPoint(initial_point, final_point, width, height, fig):
+    # Convert points to numpy arrays
+    initial_point = np.array(initial_point)
+    final_point = np.array(final_point)
+    
+    # Calculate the vector for the prism's axis
+    axis_vector = final_point - initial_point
+    length = np.linalg.norm(axis_vector)
+    axis_unit_vector = axis_vector / length
+    
+    # Define a local orthonormal basis
+    z_axis = np.array([0, 0, 1])
+    if not np.allclose(axis_unit_vector, z_axis):
+        v = np.cross(z_axis, axis_unit_vector)
+        v = v / np.linalg.norm(v)
+        K = np.array([[0, -v[2], v[1]],
+                      [v[2], 0, -v[0]],
+                      [-v[1], v[0], 0]])
+        rotation_matrix = np.eye(3) + np.sin(np.arccos(np.dot(z_axis, axis_unit_vector))) * K + \
+                          (1 - np.cos(np.arccos(np.dot(z_axis, axis_unit_vector)))) * (K @ K)
+    else:
+        rotation_matrix = np.eye(3)
+    
+    # Define the vertices of the prism in the local frame
+    w, h = width / 2, height / 2
+    local_vertices = np.array([
+        [-w, -h, 0], [w, -h, 0], [w, h, 0], [-w, h, 0],  # Bottom face
+        [-w, -h, length], [w, -h, length], [w, h, length], [-w, h, length]  # Top face
+    ])
+    
+    # Transform the vertices to global coordinates
+    rotated_vertices = local_vertices @ rotation_matrix.T
+    global_vertices = rotated_vertices + initial_point
+    
+    # Define faces for the prism
+    faces = [
+        [0, 1, 5, 4],  # Front face
+        [1, 2, 6, 5],  # Right face
+        [2, 3, 7, 6],  # Back face
+        [3, 0, 4, 7],  # Left face
+        [0, 1, 2, 3],  # Bottom face
+        [4, 5, 6, 7]   # Top face
+    ]
+    
+    # Add the prism to the figure
+    for face in faces:
+        fig.add_trace(go.Mesh3d(
+            x=global_vertices[face, 0],
+            y=global_vertices[face, 1],
+            z=global_vertices[face, 2],
+            color='blue',
+            opacity=0.5
+        ))
+
+def drawIPRprofile(initial_point, final_point, alma_width, patin_width, peralte, fig):
+    # Convert points to numpy arrays
+    initial_point = np.array(initial_point)
+    final_point = np.array(final_point)
+    
+    # Calculate the vector for the profile's axis
+    axis_vector = final_point - initial_point
+    length = np.linalg.norm(axis_vector)
+    axis_unit_vector = axis_vector / length
+    
+    # Define a local orthonormal basis
+    z_axis = np.array([0, 0, 1])
+    if not np.allclose(axis_unit_vector, z_axis):
+        v = np.cross(z_axis, axis_unit_vector)
+        v = v / np.linalg.norm(v)
+        K = np.array([[0, -v[2], v[1]],
+                      [v[2], 0, -v[0]],
+                      [-v[1], v[0], 0]])
+        rotation_matrix = np.eye(3) + np.sin(np.arccos(np.dot(z_axis, axis_unit_vector))) * K + \
+                          (1 - np.cos(np.arccos(np.dot(z_axis, axis_unit_vector)))) * (K @ K)
+    else:
+        rotation_matrix = np.eye(3)
+    
+    # Dimensions for the profile
+    h = peralte / 2
+    a = alma_width / 2
+    p = patin_width / 2
+    
+    # Define vertices for the profile in the local frame
+    local_vertices = np.array([
+        # Bottom patín
+        [-p, -h, 0], [p, -h, 0], [p, -h + a, 0], [-p, -h + a, 0],
+        # Alma
+        [-a, -h + a, 0], [a, -h + a, 0], [a, h - a, 0], [-a, h - a, 0],
+        # Top patín
+        [-p, h - a, 0], [p, h - a, 0], [p, h, 0], [-p, h, 0],
+        # Repeat top layer (for extrusion)
+        [-p, -h, length], [p, -h, length], [p, -h + a, length], [-p, -h + a, length],
+        [-a, -h + a, length], [a, -h + a, length], [a, h - a, length], [-a, h - a, length],
+        [-p, h - a, length], [p, h - a, length], [p, h, length], [-p, h, length]
+    ])
+    
+    # Transform the vertices to global coordinates
+    rotated_vertices = local_vertices @ rotation_matrix.T
+    global_vertices = rotated_vertices + initial_point
+    
+    # Define faces for the profile
+    faces = [
+        [0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11],  # Bottom, alma, top patín
+        [12, 13, 14, 15], [16, 17, 18, 19], [20, 21, 22, 23],  # Bottom, alma, top patín (extruded)
+        [0, 1, 13, 12], [1, 2, 14, 13], [2, 3, 15, 14], [3, 0, 12, 15],  # Bottom patín sides
+        [4, 5, 17, 16], [5, 6, 18, 17], [6, 7, 19, 18], [7, 4, 16, 19],  # Alma sides
+        [8, 9, 21, 20], [9, 10, 22, 21], [10, 11, 23, 22], [11, 8, 20, 23]  # Top patín sides
+    ]
+    
+    # Add the profile to the figure
+    for face in faces:
+        fig.add_trace(go.Mesh3d(
+            x=global_vertices[face, 0],
+            y=global_vertices[face, 1],
+            z=global_vertices[face, 2],
+            color='red',
+            opacity=0.5
+        ))

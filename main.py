@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget
 from PySide6.QtWebEngineWidgets import QWebEngineView
 import numpy as np
 from plotly.subplots import make_subplots
+import plotly.graph_objects as go
 import tempfile
 
 import graph
@@ -27,6 +28,8 @@ def run_app():
     MainWindow = loader.load(file)
     file.close()
     
+    results = engine.engine()
+
     dataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')
     dataTable.setColumnCount(8)  # Establecer el número de columnas
     dataTable.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])
@@ -35,7 +38,7 @@ def run_app():
     outDataTable.setColumnCount(100)
     outDataTable.setRowCount(3)
     outDataTable.setVerticalHeaderLabels(['Esfuerzo Normal por Mx','Esfuerzo Normal por My','Esfuerzo Normal'])
-    setResultValuesToTable(outDataTable, engine.engine())
+    setResultValuesToTable(outDataTable, results)
 
     addLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'addLoadPoint')
     addLoadPoint.clicked.connect(lambda: showLoadPointEntry(MainWindow))
@@ -55,9 +58,9 @@ def run_app():
     normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
     shearStress = MainWindow.findChild(QtWidgets.QRadioButton, 'shearStress')
     
-    plot1 = plotNormalStress()
-    plot2 = plotShearStress()
-    plot3 = plotNormalStress2D(engine.engine())
+    plot1 = plotNormalStress(results)
+    plot2 = plotShearStress(results)
+    plot3 = plotNormalStress2D(results)
 
     normalStress.toggled.connect(lambda: (
         web_view.load(QtCore.QUrl.fromLocalFile(plot1))))
@@ -151,7 +154,9 @@ def plotNormalStress2D(results):
     fig = make_subplots(rows=1, cols=4,
         subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
 
-    fig3, fig2, fig1 =graph.graphStress(results)
+    fig3, fig2, fig1 =graph.graphStress(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], results["esfuerzoNormalPromedio"])
+
+    
 
     for trace in fig1.data:
         fig.add_trace(trace, row=1, col=1)
@@ -159,6 +164,7 @@ def plotNormalStress2D(results):
         fig.add_trace(trace, row=1, col=2)
     for trace in fig3.data:
         fig.add_trace(trace, row=1, col=3)
+    
     
     # Ajustar el tamaño de cada gráfica
     fig.update_layout(
@@ -195,17 +201,22 @@ def plotNormalStress2D(results):
 
     return html_file
 
-def plotNormalStress():
+def plotNormalStress(results):
     profile = engine.Profile('circle',40*10**-3)
-    results = engine.engine()
 
     # Crear subplots
     fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
                         subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
 
     # Añadir superficies a los subplots
-    fig1 = graph.graphNormalStress(results, radius=profile.radius, density=10)
-    fig3, fig2= graph.graphNormalStressOfMoment(results,radius=profile.radius)
+    fig1 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
+    fig3, fig2= graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"],radius=profile.radius)
+
+    fig4 = go.Figure()
+    # graph.drawPrismPointToPoint([0,0,0],[1,1,1],1,2,fig4)
+    graph.drawIPRprofile([0, 0, 0], [1, 1, 1], 0.2, 0.5, 0.8,fig4)
+
+
 
     for trace in fig1.data:
         fig.add_trace(trace, row=1, col=1)
@@ -213,6 +224,8 @@ def plotNormalStress():
         fig.add_trace(trace, row=1, col=2)
     for trace in fig3.data:
         fig.add_trace(trace, row=1, col=3)
+    for trace in fig4.data:
+        fig.add_trace(trace, row=1, col=4)
 
     
     # Ajustar el tamaño de cada gráfica
@@ -251,18 +264,18 @@ def plotNormalStress():
 
     return html_file
     
-def plotShearStress():
+def plotShearStress(results):
     profile = engine.Profile('circle',40*10**-3)
-    results = engine.engine()
+    
 
     # Crear subplots
     fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
                         subplot_titles=("Esfuerzo Cortante Flexión", "Esfuerzo Cortante Flexión", "Esfuerzo Esfuerzo Torsión", "Gráfica 4"))
 
     # Añadir superficies a los subplots
-    fig1 = graph.graphFlexuralShearStress(results, radius=profile.radius)
-    fig2 = graph.graphFlexuralShearStress(results, radius=profile.radius, direction=-1)
-    fig3 = graph.graphTorsionalShearStress(results, radius=profile.radius)
+    fig1 = graph.graphFlexuralShearStress(results["maximoEsfuerzoCortanteX"], radius=profile.radius)
+    fig2 = graph.graphFlexuralShearStress(results["maximoEsfuerzoCortanteY"], radius=profile.radius, direction=-1)
+    fig3 = graph.graphTorsionalShearStress(results["maximoEsfuerzoCortanteTorsion"], radius=profile.radius)
 
     for trace in fig1.data:
         fig.add_trace(trace, row=1, col=1)
