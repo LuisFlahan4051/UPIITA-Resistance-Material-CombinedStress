@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>1450</width>
-    <height>888</height>
+    <height>907</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -38,15 +38,23 @@
       <property name="orientation">
        <enum>Qt::Horizontal</enum>
       </property>
-      <widget class="QTableWidget" name="dataTable">
-       <property name="sizePolicy">
-        <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-         <horstretch>0</horstretch>
-         <verstretch>0</verstretch>
-        </sizepolicy>
-       </property>
+      <widget class="QWidget" name="verticalLayoutWidget">
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <widget class="QTableWidget" name="dataForcesTable"/>
+        </item>
+        <item>
+         <widget class="QTableWidget" name="dataBarsTable"/>
+        </item>
+       </layout>
       </widget>
-      <widget class="QTableWidget" name="outDataTable"/>
+      <widget class="QWidget" name="verticalLayoutWidget_2">
+       <layout class="QVBoxLayout" name="verticalLayout_4">
+        <item>
+         <widget class="QTableWidget" name="outDataTable"/>
+        </item>
+       </layout>
+      </widget>
      </widget>
     </item>
     <item>
@@ -54,56 +62,6 @@
       <property name="spacing">
        <number>2</number>
       </property>
-      <item row="0" column="0">
-       <widget class="QGroupBox" name="groupBox">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="title">
-         <string>Opciones:</string>
-        </property>
-        <layout class="QFormLayout" name="formLayout">
-         <item row="3" column="0" colspan="2">
-          <widget class="QPushButton" name="addBar">
-           <property name="text">
-            <string>Agregar Barra</string>
-           </property>
-          </widget>
-         </item>
-         <item row="4" column="0" colspan="2">
-          <widget class="QPushButton" name="deleteBar">
-           <property name="text">
-            <string>Eliminar Barra</string>
-           </property>
-          </widget>
-         </item>
-         <item row="5" column="0">
-          <widget class="QPushButton" name="addLoadPoint">
-           <property name="text">
-            <string>Agregar Punto de Carga</string>
-           </property>
-          </widget>
-         </item>
-         <item row="6" column="0">
-          <widget class="QPushButton" name="deleteLoadPoint">
-           <property name="text">
-            <string>Eliminar Punto de Carga</string>
-           </property>
-          </widget>
-         </item>
-         <item row="2" column="0" colspan="2">
-          <widget class="QPushButton" name="update">
-           <property name="text">
-            <string>Actualizar</string>
-           </property>
-          </widget>
-         </item>
-        </layout>
-       </widget>
-      </item>
       <item row="0" column="1">
        <widget class="QGroupBox" name="groupBox_7">
         <property name="sizePolicy">
@@ -242,6 +200,56 @@
           <widget class="QRadioButton" name="mohr">
            <property name="text">
             <string>Mohr</string>
+           </property>
+          </widget>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item row="0" column="0">
+       <widget class="QGroupBox" name="groupBox">
+        <property name="sizePolicy">
+         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+          <horstretch>0</horstretch>
+          <verstretch>0</verstretch>
+         </sizepolicy>
+        </property>
+        <property name="title">
+         <string>Opciones:</string>
+        </property>
+        <layout class="QFormLayout" name="formLayout">
+         <item row="3" column="0" colspan="2">
+          <widget class="QPushButton" name="addBar">
+           <property name="text">
+            <string>Agregar Barra</string>
+           </property>
+          </widget>
+         </item>
+         <item row="4" column="0" colspan="2">
+          <widget class="QPushButton" name="deleteBar">
+           <property name="text">
+            <string>Eliminar Barra</string>
+           </property>
+          </widget>
+         </item>
+         <item row="5" column="0">
+          <widget class="QPushButton" name="addLoadPoint">
+           <property name="text">
+            <string>Agregar Punto de Carga</string>
+           </property>
+          </widget>
+         </item>
+         <item row="6" column="0">
+          <widget class="QPushButton" name="deleteLoadPoint">
+           <property name="text">
+            <string>Eliminar Punto de Carga</string>
+           </property>
+          </widget>
+         </item>
+         <item row="2" column="0" colspan="2">
+          <widget class="QPushButton" name="update">
+           <property name="text">
+            <string>Actualizar</string>
            </property>
           </widget>
          </item>

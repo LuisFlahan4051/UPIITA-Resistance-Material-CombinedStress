@@ -14,16 +14,21 @@ import test
 def main():
     run_app()
 
-estructure = go.Figure()
+### State --------------------------------------------
+
+
+### Función principal --------------------------------------------
 
 def run_app():
+    
     import sys
     app = QApplication.instance()
     if app is None:
         app = QApplication(sys.argv)
-    
-   
+
     MainWindow = QtWidgets.QMainWindow()
+    global estructure
+    estructure = go.Figure()
    
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("./main.ui")
@@ -31,11 +36,51 @@ def run_app():
     MainWindow = loader.load(file)
     file.close()
     
+    global dataBarsTable
+    dataBarsTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataBarsTable')
+    headersBars = ['Origen X', 
+               'Origen Y', 
+               'Origen Z', 
+               'Extremo X', 
+               'Extremo Y', 
+               'Extremo Z', 
+               'Eje Normal',
+               'Material', 
+               'Módulo E', 
+               'Módulo G',
+               'Perfil', 
+               'Diámetro Interno', 
+               'Diámetro Externo', 
+               'Lado 1', 
+               'Lado 2', 
+               'Eje RH', 
+               'Peralte', 
+               'Ancho Peralte', 
+               'Patin', 
+               'Ancho Patin', 
+               'Eje IPR'] 
+    dataBarsTable.setColumnCount(len(headersBars))
+    replaceHeaders(dataBarsTable, headersBars)
+
+    global dataForcesTable
+    dataForcesTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataForcesTable')
+    headersForces = ['Posición X', 
+               'Posición Y', 
+               'Posición Z', 
+               'Fuerza X', 
+               'Fuerza Y', 
+               'Fuerza Z', 
+               'Momento X', 
+               'Momento Y', 
+               'Momento Z']
+    dataForcesTable.setColumnCount(len(headersForces))
+    replaceHeaders(dataForcesTable, headersForces)
+
     results = engine.engine()
 
-    dataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataTable')
-    dataTable.setColumnCount(8)  # Establecer el número de columnas
-    dataTable.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])
+    
+    # dataTable.setColumnCount(8)  # Establecer el número de columnas
+    # dataTable.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])
     
     outDataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'outDataTable')
     outDataTable.setColumnCount(100)
@@ -49,8 +94,20 @@ def run_app():
     addBar = MainWindow.findChild(QtWidgets.QPushButton, 'addBar')
     addBar.clicked.connect(lambda: showBarEntry(MainWindow))
 
-    add_row_with_checkbox(dataTable)
-    
+    # add_row_with_checkbox(dataTable)
+
+    global interestBar
+    interestBar = MainWindow.findChild(QtWidgets.QComboBox, 'interestBar')
+
+    global interestPointX, interestPointY, interestPointZ
+    interestPointX = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointX')
+    interestPointX.setText("0")
+    interestPointY = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointY')
+    interestPointY.setText("0")
+    interestPointZ = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointZ')
+    interestPointZ.setText("0")
+
+
     graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
     web_view = QWebEngineView()
     graphLayout.addWidget(web_view)
@@ -85,6 +142,7 @@ def run_app():
     
     sys.exit(app.exec())
 
+### Agregar un punto de carga -------------------------------------------- 
 def showLoadPointEntry(parent):
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("./addPointForce.ui")
@@ -101,12 +159,22 @@ def showLoadPointEntry(parent):
     dialog_mx = dialog.findChild(QtWidgets.QLineEdit, 'dialog_mx')
     dialog_my = dialog.findChild(QtWidgets.QLineEdit, 'dialog_my')
     dialog_mz = dialog.findChild(QtWidgets.QLineEdit, 'dialog_mz')
+    dialog_mx.setText("0")
+    dialog_my.setText("0")
+    dialog_mz.setText("0")
 
-    # Conectar el botón de aceptar
+    acceptButton = dialog.findChild(QtWidgets.QDialogButtonBox, 'acceptButton').button(QtWidgets.QDialogButtonBox.Ok)
+    
+    validateFields(dialog, acceptButton)
+
+    for field in dialog.findChildren(QtWidgets.QLineEdit):
+        field.textChanged.connect(lambda: validateFields(dialog, acceptButton))
+
     if dialog.exec() == QDialog.Accepted:
-        
-        # Aquí puedes agregar el código para manejar los datos ingresados
-        print(f"aceptar")
+        data = [dialog_px.text(), dialog_py.text(), dialog_pz.text(), dialog_fx.text(), dialog_fy.text(), dialog_fz.text(), dialog_mx.text(), dialog_my.text(), dialog_mz.text()]
+        addRowDataToTable(dataForcesTable, data)
+
+### Agregar una barra a la estructura --------------------------------------------
 
 def updateModule(comboBoxMaterial, moduleE, moduleG):
     selected_material = comboBoxMaterial.currentText()
@@ -115,6 +183,49 @@ def updateModule(comboBoxMaterial, moduleE, moduleG):
         moduleE.setText(str(E_value))
         G_value = engine.materials[selected_material]["G"]
         moduleG.setText(str(G_value))
+
+def updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side1, side2, comboBoxRHAxis, peralte, widthPeralte, patin, widthPatin, comboBoxIPRHAxis):
+    if comboBoxPerfil.currentText() == "Circular":
+        internalDiameter.setEnabled(True)
+        externalDiameter.setEnabled(True)
+        side1.setEnabled(False)
+        side2.setEnabled(False)
+        comboBoxRHAxis.setEnabled(False)
+        peralte.setEnabled(False)
+        widthPeralte.setEnabled(False)
+        patin.setEnabled(False)
+        widthPatin.setEnabled(False)
+        comboBoxIPRHAxis.setEnabled(False)
+    elif comboBoxPerfil.currentText() == "Rectangular":
+        internalDiameter.setEnabled(False)
+        externalDiameter.setEnabled(False)
+        side1.setEnabled(True)
+        side2.setEnabled(True)
+        comboBoxRHAxis.setEnabled(True)
+        peralte.setEnabled(False)
+        widthPeralte.setEnabled(False)
+        patin.setEnabled(False)
+        widthPatin.setEnabled(False)
+        comboBoxIPRHAxis.setEnabled(False)
+    elif comboBoxPerfil.currentText() == "IPR":
+        internalDiameter.setEnabled(False)
+        externalDiameter.setEnabled(False)
+        side1.setEnabled(False)
+        side2.setEnabled(False)
+        comboBoxRHAxis.setEnabled(False)
+        peralte.setEnabled(True)
+        widthPeralte.setEnabled(True)
+        patin.setEnabled(True)
+        widthPatin.setEnabled(True)
+        comboBoxIPRHAxis.setEnabled(True)
+
+def validateFields(dialog, acceptButton):
+    fields = dialog.findChildren(QtWidgets.QLineEdit)
+    for field in fields:
+        if field.isEnabled() and not field.text():
+            acceptButton.setEnabled(False)
+            return
+    acceptButton.setEnabled(True)
 
 def showBarEntry(parent):
     loader = QtUiTools.QUiLoader()
@@ -133,9 +244,6 @@ def showBarEntry(parent):
     
     moduleE = dialog.findChild(QtWidgets.QLineEdit, 'moduleE')
     moduleG = dialog.findChild(QtWidgets.QLineEdit, 'moduleG')
-    
-    # Actualizar el valor del módulo cuando se seleccione un material
-    comboBoxMaterial.currentIndexChanged.connect(lambda: updateModule(comboBoxMaterial, moduleE, moduleG))
 
     originX = dialog.findChild(QtWidgets.QLineEdit, 'originX')
     originY = dialog.findChild(QtWidgets.QLineEdit, 'originY')
@@ -148,12 +256,11 @@ def showBarEntry(parent):
     comboBoxNormalAxis.addItem("y")
     comboBoxNormalAxis.addItem("z")
 
-
-    # Circular Perfil
+    # Perfil Circular
     internalDiameter = dialog.findChild(QtWidgets.QLineEdit, 'internalDiameter')
     externalDiameter = dialog.findChild(QtWidgets.QLineEdit, 'externalDiameter')
 
-    # Rectangular Perfil
+    # Perfil Rectangular
     side1 = dialog.findChild(QtWidgets.QLineEdit, 'side1')
     side2 = dialog.findChild(QtWidgets.QLineEdit, 'side2')
     comboBoxRHAxis = dialog.findChild(QtWidgets.QComboBox, 'comboBoxRHAxis')
@@ -161,7 +268,7 @@ def showBarEntry(parent):
     comboBoxRHAxis.addItem("y")
     comboBoxRHAxis.addItem("z")
 
-    # IPR Perfil
+    # Perfil IPR
     peralte = dialog.findChild(QtWidgets.QLineEdit, 'peralte')
     widthPeralte = dialog.findChild(QtWidgets.QLineEdit, 'widthPeralte')
     patin = dialog.findChild(QtWidgets.QLineEdit, 'patin')
@@ -171,12 +278,75 @@ def showBarEntry(parent):
     comboBoxIPRHAxis.addItem("y")
     comboBoxIPRHAxis.addItem("z")
 
+    acceptButton = dialog.findChild(QtWidgets.QDialogButtonBox, 'buttonBox').button(QtWidgets.QDialogButtonBox.Ok)
 
-    # Conectar el botón de aceptar
+    comboBoxMaterial.currentIndexChanged.connect(lambda: updateModule(comboBoxMaterial, moduleE, moduleG))
+    comboBoxPerfil.currentIndexChanged.connect(lambda: updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side1, side2, comboBoxRHAxis, peralte, widthPeralte, patin, widthPatin, comboBoxIPRHAxis))
+    updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side1, side2, comboBoxRHAxis, peralte, widthPeralte, patin, widthPatin, comboBoxIPRHAxis)
+    comboBoxPerfil.currentIndexChanged.connect(lambda: validateFields(dialog, acceptButton))
+    validateFields(dialog, acceptButton)
+
+    for field in dialog.findChildren(QtWidgets.QLineEdit):
+        field.textChanged.connect(lambda: validateFields(dialog, acceptButton))
+    
     if dialog.exec() == QDialog.Accepted:
-        
-        # Aquí puedes agregar el código para manejar los datos ingresados
-        print(f"aceptar")
+        if comboBoxPerfil.currentText() == "Circular":
+            data = [originX.text(),originY.text(),originZ.text(),endX.text(),endY.text(),endZ.text(),comboBoxNormalAxis.currentText(),comboBoxMaterial.currentText(),moduleE.text(),moduleG.text(),comboBoxPerfil.currentText(),internalDiameter.text(),externalDiameter.text()]
+            addRowDataToTable(dataBarsTable, data)
+        if comboBoxPerfil.currentText() == "Rectangular":
+            data = [originX.text(),originY.text(),originZ.text(),endX.text(),endY.text(),endZ.text(),comboBoxNormalAxis.currentText(),comboBoxMaterial.currentText(),moduleE.text(),moduleG.text(),comboBoxPerfil.currentText(),"","",side1.text(),side2.text(),comboBoxRHAxis.currentText()]
+            addRowDataToTable(dataBarsTable, data)
+        if comboBoxPerfil.currentText() == "IPR":
+            data = [originX.text(),originY.text(),originZ.text(),endX.text(),endY.text(),endZ.text(),comboBoxNormalAxis.currentText(),comboBoxMaterial.currentText(),moduleE.text(),moduleG.text(),comboBoxPerfil.currentText(),"","","","","",peralte.text(),widthPeralte.text(),patin.text(),widthPatin.text(),comboBoxIPRHAxis.currentText()]
+            addRowDataToTable(dataBarsTable, data)
+        interestBar.addItem(f"{dataBarsTable.rowCount()}")
+    
+
+### Operar los datos de tabla --------------------------------------------
+
+def replaceHeaders(table_widget, headers):
+    """
+    Reemplaza los encabezados de columna de la tabla.
+
+    Args:
+        table_widget (QTableWidget): La tabla cuyos encabezados de columna se reemplazarán.
+        headers (list): Una lista de encabezados de columna.
+    """
+
+    table_widget.setHorizontalHeaderLabels(headers)
+
+def addRowDataToTable(table_widget, data, headers=None):
+    """
+    Agrega una fila de datos a la tabla.
+
+    Args:
+        table_widget (QTableWidget): La tabla a la que se agregarán los datos.
+        data (list): Una lista de valores que se agregarán como una nueva fila.
+        headers (list, opcional): Una lista de encabezados de columna. Si se proporciona, se establecerán como encabezados de columna.
+    """
+    # Obtener el número actual de filas y columnas
+    row_count = table_widget.rowCount()
+    current_column_count = table_widget.columnCount()
+    new_column_count = len(data)
+    
+    # Ajustar el número de columnas si es necesario
+    if new_column_count > current_column_count:
+        table_widget.setColumnCount(new_column_count)
+    elif new_column_count < current_column_count:
+        # Rellenar los datos con valores vacíos si hay menos columnas en los datos
+        data.extend([''] * (current_column_count - new_column_count))
+        new_column_count = current_column_count
+    
+    # Establecer los encabezados de las columnas si se proporcionan
+    if headers:
+        table_widget.setHorizontalHeaderLabels(headers)
+    
+    # Insertar una nueva fila
+    table_widget.insertRow(row_count)
+
+    # Insertar los datos en las columnas
+    for i, value in enumerate(data):
+        table_widget.setItem(row_count, i, QTableWidgetItem(str(value)))
 
 def setResultValuesToTable(outDataTable, resultados):
     theta = np.linspace(0,360,100)
@@ -189,7 +359,6 @@ def setResultValuesToTable(outDataTable, resultados):
         outDataTable.setItem(1, i, QTableWidgetItem(f"{engine.format_eng(eY[i])}"))
         outDataTable.setItem(2, i, QTableWidgetItem(f"{engine.format_eng(eN[i])}"))
     
-
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas
     row_count = table_widget.rowCount()
@@ -227,6 +396,8 @@ def add_row_with_checkbox(table_widget):
     # Insertar datos de ejemplo en las otras columnas
     table_widget.setItem(row_count, 1, QTableWidgetItem("Dato 1"))
     table_widget.setItem(row_count, 2, QTableWidgetItem("Dato 2"))
+
+### Plot Functions --------------------------------------------
 
 def plotNormalStress2D(results):
     fig = make_subplots(rows=1, cols=4,
@@ -344,7 +515,7 @@ def plotNormalStress(results):
         html_file = tmpfile.name
 
     return html_file
-    
+
 def plotShearStress(results):
     profile = engine.Profile('circle',40*10**-3)
     
