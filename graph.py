@@ -505,7 +505,7 @@ def drawPrismPointToPoint(initial_point, final_point, width, height, fig):
             opacity=0.5
         ))
 
-def drawIPRprofile(initial_point, final_point, alma_width, patin_width, peralte, fig):
+def drawIPRprofile(initial_point, final_point, alma_width, patin_width, patin, peralte, fig):
     # Convert points to numpy arrays
     initial_point = np.array(initial_point)
     final_point = np.array(final_point)
@@ -532,19 +532,20 @@ def drawIPRprofile(initial_point, final_point, alma_width, patin_width, peralte,
     h = peralte / 2
     a = alma_width / 2
     p = patin_width / 2
+    pt = patin / 2
     
     # Define vertices for the profile in the local frame
     local_vertices = np.array([
         # Bottom patín
-        [-p, -h, 0], [p, -h, 0], [p, -h + a, 0], [-p, -h + a, 0],
+        [-p, -h, 0], [p, -h, 0], [p, -h + pt, 0], [-p, -h + pt, 0],
         # Alma
-        [-a, -h + a, 0], [a, -h + a, 0], [a, h - a, 0], [-a, h - a, 0],
+        [-a, -h + pt, 0], [a, -h + pt, 0], [a, h - pt, 0], [-a, h - pt, 0],
         # Top patín
-        [-p, h - a, 0], [p, h - a, 0], [p, h, 0], [-p, h, 0],
+        [-p, h - pt, 0], [p, h - pt, 0], [p, h, 0], [-p, h, 0],
         # Repeat top layer (for extrusion)
-        [-p, -h, length], [p, -h, length], [p, -h + a, length], [-p, -h + a, length],
-        [-a, -h + a, length], [a, -h + a, length], [a, h - a, length], [-a, h - a, length],
-        [-p, h - a, length], [p, h - a, length], [p, h, length], [-p, h, length]
+        [-p, -h, length], [p, -h, length], [p, -h + pt, length], [-p, -h + pt, length],
+        [-a, -h + pt, length], [a, -h + pt, length], [a, h - pt, length], [-a, h - pt, length],
+        [-p, h - pt, length], [p, h - pt, length], [p, h, length], [-p, h, length]
     ])
     
     # Transform the vertices to global coordinates

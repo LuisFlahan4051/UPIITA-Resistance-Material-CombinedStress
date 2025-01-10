@@ -24,8 +24,11 @@ if app is None:
 global MainWindow
 MainWindow = QtWidgets.QMainWindow()
 
-global estructure
-estructure = go.Figure()
+loader = QtUiTools.QUiLoader()
+file = QtCore.QFile("./main.ui")
+file.open(QtCore.QFile.ReadOnly)
+MainWindow = loader.load(file)
+file.close()
 
 global dataBarsTable
 dataBarsTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataBarsTable')
@@ -52,6 +55,35 @@ global web_view
 web_view = QWebEngineView()
 MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1').addWidget(web_view)
 
+global estructure, fig2, fig3, fig4
+estructure = go.Figure()
+fig2 = go.Figure()
+fig3 = go.Figure()
+fig4 = go.Figure()
+global titleGroupNormal,titlesNormal, axis_titlesNormal
+titleGroupNormal = 'Esfuerzos Normales'
+titlesNormal = ['Estructura', 'Esfuerzo Normal', 'Esfuerzo normal por Mx', 'Esfuerzo normal por My']
+axis_titlesNormal = [{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'},{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}]
+global titleGroupCortante ,titlesCortante, axis_titlesCortante
+titleGroupCortante = 'Esfuerzos Cortantes'
+titlesCortante = ['Estructura', 'Esfuerzo Cortante Flexión Eje 1', 'Esfuerzo Cortante Flexión Eje 2', 'Esfuerzo Cortante Torsión']
+axis_titlesCortante = [{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'},{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}]
+global titleGroupNormal2D , titlesNormal2D, axis_titlesNormal2D
+titleGroupNormal2D = "Esfuerzos Normales"
+titlesNormal2D = ['Estructura', 'Esfuerzo Normal', 'Esfuerzo normal por Mx', 'Esfuerzo normal por My']
+axis_titlesNormal2D = [{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'},{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}]
+
+global titleGroupMohr, titlesMohr, axis_titlesMohr
+titleGroupMohr = 'Círculo de Mohr'
+titlesMohr = ['Círculo de Mohr 2D', 'Círculo de Mohr 3D', 'Círculo de Mohr 3D Esferas']
+axis_titlesMohr = [{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'},{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}, {'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}]
+
+global titleGroup, titles, axis_titles
+titleGroup = titleGroupNormal
+titles = titlesNormal
+axis_titles = axis_titlesNormal
+
+
 global normalStress, normalStress2D, shearStress, mohrStress
 normalStress = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress')
 normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
@@ -67,13 +99,6 @@ def run_app():
     splash.setMask(splash_pix.mask())
     splash.show()
     app.processEvents()
-   
-    loader = QtUiTools.QUiLoader()
-    file = QtCore.QFile("./main.ui")
-    file.open(QtCore.QFile.ReadOnly)
-    MainWindow = loader.load(file)
-    file.close()
-    
 
     # Initialization ---------
     # Tabla de barras.
@@ -143,7 +168,7 @@ def run_app():
 
     # TODO: trabajar con los estados
 
-    plot1 = plotNormalStress(results)
+    plot1 = plotNormalStress()
     plot2 = plotShearStress(results)
     plot3 = plotNormalStress2D(results)
     plotMohrFile = plotMohr(results)
@@ -427,76 +452,76 @@ def add_row_with_checkbox(table_widget):
 
 ### Plot Functions --------------------------------------------
 def updateStructures():
+    # global estructure, fig2, fig3, fig4
+    newFig = go.Figure()
+    
     row_count = dataBarsTable.rowCount()
-    initialPoint = [0,0,0]
-    endPoint = [1,1,1]
-    radius = 1
-    graph.drawCylinderPointToPoint(initial_point=initialPoint, final_point=endPoint, radius=radius, fig=estructure)
-    plot = plotNormalStress(results=engine.engine())
-    web_view.load(QtCore.QUrl.fromLocalFile(plot))
     for row in range(row_count):
         if dataBarsTable.item(row, 10).text() == "Circular":
-            # initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
-            # endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
-            # diameter = float(dataBarsTable.item(row, 12).text())
-            # radius = diameter / 2
-            print("ejecutando")
+            initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
+            endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
+            diameter = float(dataBarsTable.item(row, 12).text())
+            radius = diameter / 2
+            graph.drawCylinderPointToPoint(initial_point=initialPoint, final_point=endPoint, radius=radius, fig=newFig)
+        if dataBarsTable.item(row, 10).text() == "Rectangular":
+            initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
+            endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
+            side1 = float(dataBarsTable.item(row, 13).text())
+            side2 = float(dataBarsTable.item(row, 14).text())
+            graph.drawPrismPointToPoint(initialPoint, endPoint, width=side1, height=side2, fig=newFig)
+        if dataBarsTable.item(row, 10).text() == "IPR":
+            initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
+            endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
+            peralte = float(dataBarsTable.item(row, 16).text())
+            widthAlma = float(dataBarsTable.item(row, 17).text())
+            patin = float(dataBarsTable.item(row, 18).text())
+            widthPatin = float(dataBarsTable.item(row, 19).text())
+            graph.drawIPRprofile(initialPoint, endPoint, widthAlma, widthPatin, patin, peralte, newFig)
+    
+    estructure = newFig
+    figs = [estructure, fig2, fig3, fig4]
+    html_file = plotGraphs(figs, titleGroup, titles, axis_titles)
+    web_view.load(QtCore.QUrl.fromLocalFile(html_file))
+            
 
-def plotNormalStress(results):
+def plotGraphs(figures, groupTitle='Grupo 1', titles=None, axis_titles=None):
+    if titles is None:
+        titles = ['Gráfica 1', 'Gráfica 2', 'Gráfica 3', 'Gráfica 4']
+    
+    if axis_titles is None:
+        axis_titles = [{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}] * 4
 
-    profile = engine.Profile('circle',40*10**-3)
-
-    # Crear subplots
     fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
+                        subplot_titles=titles)
 
-    # Añadir superficies a los subplots
-    fig1 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
-    fig3, fig2= graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"],radius=profile.radius)
+    for i, figure in enumerate(figures):
+        for trace in figure.data:
+            fig.add_trace(trace, row=1, col=i+1)
 
-    # fig4 = go.Figure()
-    # # graph.drawPrismPointToPoint([0,0,0],[1,1,1],1,2,fig4)
-    # graph.drawIPRprofile([0, 0, 0], [1, 1, 1], 0.2, 0.5, 0.8,fig4)
-    # graph.drawArrowMoment([1, 1, 1], fig4, axis='y', invertDirection=True)
-    
-
-
-
-
-    for trace in fig1.data:
-        fig.add_trace(trace, row=1, col=1)
-    for trace in fig2.data:
-        fig.add_trace(trace, row=1, col=2)
-    for trace in fig3.data:
-        fig.add_trace(trace, row=1, col=3)
-    for trace in estructure.data:
-        fig.add_trace(trace, row=1, col=4)
-
-    
     # Ajustar el tamaño de cada gráfica
     fig.update_layout(
-        title='Esfuerzos Normales',
+        title=groupTitle,
         height=350,  # Altura total de la figura
         width=1500,  # Ancho total de la figura
         scene=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
+            xaxis_title=axis_titles[0]['x'],
+            yaxis_title=axis_titles[0]['y'],
+            zaxis_title=axis_titles[0]['z']
         ),
         scene2=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
+            xaxis_title=axis_titles[1]['x'],
+            yaxis_title=axis_titles[1]['y'],
+            zaxis_title=axis_titles[1]['z']
         ),
         scene3=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
+            xaxis_title=axis_titles[2]['x'],
+            yaxis_title=axis_titles[2]['y'],
+            zaxis_title=axis_titles[2]['z']
         ),
         scene4=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
+            xaxis_title=axis_titles[3]['x'],
+            yaxis_title=axis_titles[3]['y'],
+            zaxis_title=axis_titles[3]['z']
         )
     )
 
@@ -508,6 +533,16 @@ def plotNormalStress(results):
         html_file = tmpfile.name
 
     return html_file
+
+def plotNormalStress():
+
+    profile = engine.Profile('circle',40*10**-3)
+
+    global fig2, fig3, fig4
+    fig2 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
+    fig3, fig4= graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"],radius=profile.radius)
+    
+    return plotGraphs([estructure, fig2, fig3, fig4], titleGroupNormal, titlesNormal, axis_titlesNormal)
 
 def plotNormalStress2D(results):
     fig = make_subplots(rows=1, cols=4,
