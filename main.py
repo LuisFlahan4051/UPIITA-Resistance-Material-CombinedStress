@@ -171,7 +171,7 @@ def run_app():
     plot1 = plotNormalStress()
     plot2 = plotShearStress(results)
     plot3 = plotNormalStress2D(results)
-    plotMohrFile = plotMohr(results)
+    plotMohrFile = plotMohr()
 
     
     normalStress.toggled.connect(lambda: (
@@ -484,15 +484,15 @@ def updateStructures():
     web_view.load(QtCore.QUrl.fromLocalFile(html_file))
             
 
-def plotGraphs(figures, groupTitle='Grupo 1', titles=None, axis_titles=None):
+def plotGraphs(figures, groupTitle='Grupo 1', titles=None, axis_titles=None, plot_type='surface'):
     if titles is None:
         titles = ['Gráfica 1', 'Gráfica 2', 'Gráfica 3', 'Gráfica 4']
     
     if axis_titles is None:
         axis_titles = [{'x': 'Eje X', 'y': 'Eje Y', 'z': 'Eje Z'}] * 4
 
-    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=titles)
+    specs = [[{'type': plot_type} for _ in range(len(figures))]]
+    fig = make_subplots(rows=1, cols=len(figures), specs=specs, subplot_titles=titles)
 
     for i, figure in enumerate(figures):
         for trace in figure.data:
@@ -500,89 +500,18 @@ def plotGraphs(figures, groupTitle='Grupo 1', titles=None, axis_titles=None):
 
     # Ajustar el tamaño de cada gráfica
     fig.update_layout(
-        title=groupTitle,
+        title={'text': groupTitle},
         height=350,  # Altura total de la figura
         width=1500,  # Ancho total de la figura
-        scene=dict(
-            xaxis_title=axis_titles[0]['x'],
-            yaxis_title=axis_titles[0]['y'],
-            zaxis_title=axis_titles[0]['z']
-        ),
-        scene2=dict(
-            xaxis_title=axis_titles[1]['x'],
-            yaxis_title=axis_titles[1]['y'],
-            zaxis_title=axis_titles[1]['z']
-        ),
-        scene3=dict(
-            xaxis_title=axis_titles[2]['x'],
-            yaxis_title=axis_titles[2]['y'],
-            zaxis_title=axis_titles[2]['z']
-        ),
-        scene4=dict(
-            xaxis_title=axis_titles[3]['x'],
-            yaxis_title=axis_titles[3]['y'],
-            zaxis_title=axis_titles[3]['z']
-        )
     )
 
-    # Guardar la figura en un archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
-        fig.write_html(tmpfile.name)
-        tmpfile.flush()
-        tmpfile.seek(0)
-        html_file = tmpfile.name
+    # Ajustar los títulos de los ejes
+    for i in range(len(figures)):
+        fig.update_xaxes(title_text=axis_titles[i]['x'], row=1, col=i+1)
+        fig.update_yaxes(title_text=axis_titles[i]['y'], row=1, col=i+1)
+        if plot_type == 'surface':
+            fig.update_scenes(zaxis_title_text=axis_titles[i]['z'], row=1, col=i+1)
 
-    return html_file
-
-def plotNormalStress():
-
-    profile = engine.Profile('circle',40*10**-3)
-
-    global fig2, fig3, fig4
-    fig2 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
-    fig3, fig4= graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"],radius=profile.radius)
-    
-    return plotGraphs([estructure, fig2, fig3, fig4], titleGroupNormal, titlesNormal, axis_titlesNormal)
-
-def plotNormalStress2D(results):
-    fig = make_subplots(rows=1, cols=4,
-        subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
-
-    fig3, fig2, fig1 =graph.graphStress(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], results["esfuerzoNormalPromedio"])
-
-
-
-    for trace in fig1.data:
-        fig.add_trace(trace, row=1, col=1)
-    for trace in fig2.data:
-        fig.add_trace(trace, row=1, col=2)
-    for trace in fig3.data:
-        fig.add_trace(trace, row=1, col=3)
-    
-    
-    # Ajustar el tamaño de cada gráfica
-    fig.update_layout(
-        title='Esfuerzos Normales',
-        height=350,  # Altura total de la figura
-        width=1500,  # Ancho total de la figura
-        scene=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-        ),
-        scene2=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y'
-        ),
-        scene3=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y'
-        ),
-        scene4=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y'
-        )
-    )
-    
     # Ajustar el formato de los ejes Y
     fig.update_yaxes(tickformat=".1e")
 
@@ -595,67 +524,30 @@ def plotNormalStress2D(results):
 
     return html_file
 
-def plotShearStress(results):
-    profile = engine.Profile('circle',40*10**-3)
+def plotNormalStress():
+    profile = engine.Profile('circle', 40 * 10**-3)
+
+    global fig2, fig3, fig4
+    fig2 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
+    fig3, fig4 = graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], radius=profile.radius)
     
+    return plotGraphs([estructure, fig2, fig3, fig4], titleGroupNormal, titlesNormal, axis_titlesNormal, plot_type='surface')
 
-    # Crear subplots
-    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=("Esfuerzo Cortante Flexión", "Esfuerzo Cortante Flexión", "Esfuerzo Esfuerzo Torsión", "Gráfica 4"))
+def plotNormalStress2D(results):
+    fig3, fig2, fig1 = graph.graphStress(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], results["esfuerzoNormalPromedio"])
+    
+    return plotGraphs([fig1, fig2, fig3], titleGroupNormal2D, titlesNormal2D, axis_titlesNormal2D, plot_type='xy')
 
-    # Añadir superficies a los subplots
+def plotShearStress(results):
+    profile = engine.Profile('circle', 40 * 10**-3)
+
     fig1 = graph.graphFlexuralShearStress(results["maximoEsfuerzoCortanteX"], radius=profile.radius)
     fig2 = graph.graphFlexuralShearStress(results["maximoEsfuerzoCortanteY"], radius=profile.radius, direction=-1)
     fig3 = graph.graphTorsionalShearStress(results["maximoEsfuerzoCortanteTorsion"], radius=profile.radius)
 
-    for trace in fig1.data:
-        fig.add_trace(trace, row=1, col=1)
-    for trace in fig2.data:
-        fig.add_trace(trace, row=1, col=2)
-    for trace in fig3.data:
-        fig.add_trace(trace, row=1, col=3)
+    return plotGraphs([estructure,fig1, fig2, fig3], titleGroupCortante, titlesCortante, axis_titlesCortante, plot_type='surface')
 
-    
-    # Ajustar el tamaño de cada gráfica
-    fig.update_layout(
-        title='Esfuerzos Cortantes',
-        height=350,  # Altura total de la figura
-        width=1500,  # Ancho total de la figura
-        scene=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        ),
-        scene2=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        ),
-        scene3=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        ),
-        scene4=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        )
-    )
-
-    # Guardar la figura en un archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
-        fig.write_html(tmpfile.name)
-        tmpfile.flush()
-        tmpfile.seek(0)
-        html_file = tmpfile.name
-
-    # Crear el QWebEngineView y cargar el archivo HTML
-    
-    # parent.load(QtCore.QUrl.fromLocalFile(html_file))
-    return html_file
-
-def plotMohr(results):
+def plotMohr():
     # Extraer los valores necesarios de los resultados
     # sigma_x = results['sigma_x']
     # sigma_y = results['sigma_y']

@@ -531,8 +531,8 @@ def drawIPRprofile(initial_point, final_point, alma_width, patin_width, patin, p
     # Dimensions for the profile
     h = peralte / 2
     a = alma_width / 2
-    p = patin_width / 2
-    pt = patin / 2
+    p = patin / 2
+    pt = patin_width / 2
     
     # Define vertices for the profile in the local frame
     local_vertices = np.array([
@@ -570,7 +570,7 @@ def drawIPRprofile(initial_point, final_point, alma_width, patin_width, patin, p
             color='red',
             opacity=0.5
         ))
-
+        
 def drawArrowMoment(point, fig, radius=1, axis="x", invertDirection=False):
     # Convert point to numpy array
     point = np.array(point)
