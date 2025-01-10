@@ -1,4 +1,4 @@
-from PySide6 import QtWidgets, QtCore, QtUiTools
+from PySide6 import QtWidgets, QtCore, QtUiTools, QtGui
 from PySide6.QtWidgets import QApplication, QTableWidgetItem, QCheckBox, QWidget, QHBoxLayout, QComboBox, QDialog
 from PySide6.QtWebEngineWidgets import QWebEngineView
 import numpy as np
@@ -10,25 +10,63 @@ import graph
 import engine
 from engine import n, u, m, k, M, G, T, cord_x, cord_y, cord_z
 import test
+import sys
 
 def main():
     run_app()
 
 ### State --------------------------------------------
+global app
+app = QApplication.instance()
+if app is None:
+    app = QApplication(sys.argv)
 
+global MainWindow
+MainWindow = QtWidgets.QMainWindow()
+
+global estructure
+estructure = go.Figure()
+
+global dataBarsTable
+dataBarsTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataBarsTable')
+
+global dataForcesTable
+dataForcesTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataForcesTable')
+
+global outDataTable
+outDataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'outDataTable')
+
+global results, materials
+results = engine.engine()
+materials = engine.materials
+
+global interestPointX, interestPointY, interestPointZ
+interestPointX = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointX')
+interestPointY = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointY')
+interestPointZ = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointZ')
+
+global interestBar
+interestBar = MainWindow.findChild(QtWidgets.QComboBox, 'interestBar')
+
+global web_view
+web_view = QWebEngineView()
+MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1').addWidget(web_view)
+
+global normalStress, normalStress2D, shearStress, mohrStress
+normalStress = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress')
+normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
+shearStress = MainWindow.findChild(QtWidgets.QRadioButton, 'shearStress')
+mohrStress = MainWindow.findChild(QtWidgets.QRadioButton, 'mohr')
 
 ### Función principal --------------------------------------------
 
 def run_app():
-    
-    import sys
-    app = QApplication.instance()
-    if app is None:
-        app = QApplication(sys.argv)
-
-    MainWindow = QtWidgets.QMainWindow()
-    global estructure
-    estructure = go.Figure()
+    # Splash Window --------
+    splash_pix = QtGui.QPixmap('./splash_image.png')
+    splash = QtWidgets.QSplashScreen(splash_pix, QtCore.Qt.WindowStaysOnTopHint)
+    splash.setMask(splash_pix.mask())
+    splash.show()
+    app.processEvents()
    
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("./main.ui")
@@ -36,8 +74,9 @@ def run_app():
     MainWindow = loader.load(file)
     file.close()
     
-    global dataBarsTable
-    dataBarsTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataBarsTable')
+
+    # Initialization ---------
+    # Tabla de barras.
     headersBars = ['Origen X', 
                'Origen Y', 
                'Origen Z', 
@@ -62,8 +101,7 @@ def run_app():
     dataBarsTable.setColumnCount(len(headersBars))
     replaceHeaders(dataBarsTable, headersBars)
 
-    global dataForcesTable
-    dataForcesTable = MainWindow.findChild(QtWidgets.QTableWidget, 'dataForcesTable')
+    # Tabla de Fuerzas
     headersForces = ['Posición X', 
                'Posición Y', 
                'Posición Z', 
@@ -76,54 +114,41 @@ def run_app():
     dataForcesTable.setColumnCount(len(headersForces))
     replaceHeaders(dataForcesTable, headersForces)
 
-    results = engine.engine()
-
-    
-    # dataTable.setColumnCount(8)  # Establecer el número de columnas
-    # dataTable.setHorizontalHeaderLabels(['x', 'y','z','Apoyo','Tipo Apoyo','fx','fy','fz'])
-    
-    outDataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'outDataTable')
+    # Tabla de datos de salida
     outDataTable.setColumnCount(100)
     outDataTable.setRowCount(3)
     outDataTable.setVerticalHeaderLabels(['Esfuerzo Normal por Mx','Esfuerzo Normal por My','Esfuerzo Normal'])
     setResultValuesToTable(outDataTable, results)
 
-    addLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'addLoadPoint')
-    addLoadPoint.clicked.connect(lambda: showLoadPointEntry(MainWindow))
+    # Punto de interés a analizar
+    interestPointX.setText("0")
+    interestPointY.setText("0")
+    interestPointZ.setText("0")
 
+    # Escucha de eventos de los botones --------
+
+    # Agregar barra
     addBar = MainWindow.findChild(QtWidgets.QPushButton, 'addBar')
     addBar.clicked.connect(lambda: showBarEntry(MainWindow))
 
-    # add_row_with_checkbox(dataTable)
-
-    global interestBar
-    interestBar = MainWindow.findChild(QtWidgets.QComboBox, 'interestBar')
-
-    global interestPointX, interestPointY, interestPointZ
-    interestPointX = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointX')
-    interestPointX.setText("0")
-    interestPointY = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointY')
-    interestPointY.setText("0")
-    interestPointZ = MainWindow.findChild(QtWidgets.QLineEdit, 'interestPointZ')
-    interestPointZ.setText("0")
-
-
-    graphLayout = MainWindow.findChild(QtWidgets.QVBoxLayout, 'graphLayout1')
-    web_view = QWebEngineView()
-    graphLayout.addWidget(web_view)
-
+    # Agregar punto de fuerza
+    addLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'addLoadPoint')
+    addLoadPoint.clicked.connect(lambda: showLoadPointEntry(MainWindow))
     
-    
-    normalStress = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress')
-    normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
-    shearStress = MainWindow.findChild(QtWidgets.QRadioButton, 'shearStress')
-    mohrStress = MainWindow.findChild(QtWidgets.QRadioButton, 'mohr')
-    
+    # Actualizar
+    updateBtn = MainWindow.findChild(QtWidgets.QPushButton, 'updateBtn')
+    updateBtn.clicked.connect(lambda: (
+        updateStructures()
+    ))
+
+    # TODO: trabajar con los estados
+
     plot1 = plotNormalStress(results)
     plot2 = plotShearStress(results)
     plot3 = plotNormalStress2D(results)
     plotMohrFile = plotMohr(results)
 
+    
     normalStress.toggled.connect(lambda: (
         web_view.load(QtCore.QUrl.fromLocalFile(plot1))))
     shearStress.toggled.connect(lambda: (
@@ -137,8 +162,8 @@ def run_app():
 
 
 
-
     MainWindow.show()
+    splash.finish(MainWindow)
     
     sys.exit(app.exec())
 
@@ -176,13 +201,16 @@ def showLoadPointEntry(parent):
 
 ### Agregar una barra a la estructura --------------------------------------------
 
-def updateModule(comboBoxMaterial, moduleE, moduleG):
+def updateModule(comboBoxMaterial, moduleEWidget, moduleGWidget, materials):
+    """
+    Hace dinámico la carga de datos a los fields correspondientes.
+    """
     selected_material = comboBoxMaterial.currentText()
-    if selected_material in engine.materials:
-        E_value = engine.materials[selected_material]["E"]
-        moduleE.setText(str(E_value))
-        G_value = engine.materials[selected_material]["G"]
-        moduleG.setText(str(G_value))
+    if selected_material in materials:
+        E_value = materials[selected_material]["E"]
+        moduleEWidget.setText(str(E_value))
+        G_value = materials[selected_material]["G"]
+        moduleGWidget.setText(str(G_value))
 
 def updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side1, side2, comboBoxRHAxis, peralte, widthPeralte, patin, widthPatin, comboBoxIPRHAxis):
     if comboBoxPerfil.currentText() == "Circular":
@@ -280,7 +308,7 @@ def showBarEntry(parent):
 
     acceptButton = dialog.findChild(QtWidgets.QDialogButtonBox, 'buttonBox').button(QtWidgets.QDialogButtonBox.Ok)
 
-    comboBoxMaterial.currentIndexChanged.connect(lambda: updateModule(comboBoxMaterial, moduleE, moduleG))
+    comboBoxMaterial.currentIndexChanged.connect(lambda: updateModule(comboBoxMaterial, moduleE, moduleG, materials))
     comboBoxPerfil.currentIndexChanged.connect(lambda: updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side1, side2, comboBoxRHAxis, peralte, widthPeralte, patin, widthPatin, comboBoxIPRHAxis))
     updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side1, side2, comboBoxRHAxis, peralte, widthPeralte, patin, widthPatin, comboBoxIPRHAxis)
     comboBoxPerfil.currentIndexChanged.connect(lambda: validateFields(dialog, acceptButton))
@@ -398,6 +426,88 @@ def add_row_with_checkbox(table_widget):
     table_widget.setItem(row_count, 2, QTableWidgetItem("Dato 2"))
 
 ### Plot Functions --------------------------------------------
+def updateStructures():
+    row_count = dataBarsTable.rowCount()
+    initialPoint = [0,0,0]
+    endPoint = [1,1,1]
+    radius = 1
+    graph.drawCylinderPointToPoint(initial_point=initialPoint, final_point=endPoint, radius=radius, fig=estructure)
+    plot = plotNormalStress(results=engine.engine())
+    web_view.load(QtCore.QUrl.fromLocalFile(plot))
+    for row in range(row_count):
+        if dataBarsTable.item(row, 10).text() == "Circular":
+            # initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
+            # endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
+            # diameter = float(dataBarsTable.item(row, 12).text())
+            # radius = diameter / 2
+            print("ejecutando")
+
+def plotNormalStress(results):
+
+    profile = engine.Profile('circle',40*10**-3)
+
+    # Crear subplots
+    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
+                        subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
+
+    # Añadir superficies a los subplots
+    fig1 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
+    fig3, fig2= graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"],radius=profile.radius)
+
+    # fig4 = go.Figure()
+    # # graph.drawPrismPointToPoint([0,0,0],[1,1,1],1,2,fig4)
+    # graph.drawIPRprofile([0, 0, 0], [1, 1, 1], 0.2, 0.5, 0.8,fig4)
+    # graph.drawArrowMoment([1, 1, 1], fig4, axis='y', invertDirection=True)
+    
+
+
+
+
+    for trace in fig1.data:
+        fig.add_trace(trace, row=1, col=1)
+    for trace in fig2.data:
+        fig.add_trace(trace, row=1, col=2)
+    for trace in fig3.data:
+        fig.add_trace(trace, row=1, col=3)
+    for trace in estructure.data:
+        fig.add_trace(trace, row=1, col=4)
+
+    
+    # Ajustar el tamaño de cada gráfica
+    fig.update_layout(
+        title='Esfuerzos Normales',
+        height=350,  # Altura total de la figura
+        width=1500,  # Ancho total de la figura
+        scene=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene2=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene3=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        scene4=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        )
+    )
+
+    # Guardar la figura en un archivo temporal
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
+        fig.write_html(tmpfile.name)
+        tmpfile.flush()
+        tmpfile.seek(0)
+        html_file = tmpfile.name
+
+    return html_file
 
 def plotNormalStress2D(results):
     fig = make_subplots(rows=1, cols=4,
@@ -440,72 +550,6 @@ def plotNormalStress2D(results):
     
     # Ajustar el formato de los ejes Y
     fig.update_yaxes(tickformat=".1e")
-
-    # Guardar la figura en un archivo temporal
-    with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
-        fig.write_html(tmpfile.name)
-        tmpfile.flush()
-        tmpfile.seek(0)
-        html_file = tmpfile.name
-
-    return html_file
-
-def plotNormalStress(results):
-    profile = engine.Profile('circle',40*10**-3)
-
-    # Crear subplots
-    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=("Esfuerzo Normal", "Esfuerzo Por Flexión", "Esfuerzo Por Flexión", "Gráfica 4"))
-
-    # Añadir superficies a los subplots
-    fig1 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
-    fig3, fig2= graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"],radius=profile.radius)
-
-    fig4 = go.Figure()
-    # graph.drawPrismPointToPoint([0,0,0],[1,1,1],1,2,fig4)
-    graph.drawIPRprofile([0, 0, 0], [1, 1, 1], 0.2, 0.5, 0.8,fig4)
-    graph.drawArrowMoment([1, 1, 1], fig4, axis='y', invertDirection=True)
-    
-
-
-
-
-    for trace in fig1.data:
-        fig.add_trace(trace, row=1, col=1)
-    for trace in fig2.data:
-        fig.add_trace(trace, row=1, col=2)
-    for trace in fig3.data:
-        fig.add_trace(trace, row=1, col=3)
-    for trace in fig4.data:
-        fig.add_trace(trace, row=1, col=4)
-
-    
-    # Ajustar el tamaño de cada gráfica
-    fig.update_layout(
-        title='Esfuerzos Normales',
-        height=350,  # Altura total de la figura
-        width=1500,  # Ancho total de la figura
-        scene=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        ),
-        scene2=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        ),
-        scene3=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        ),
-        scene4=dict(
-            xaxis_title='Eje X',
-            yaxis_title='Eje Y',
-            zaxis_title='Eje Z'
-        )
-    )
 
     # Guardar la figura en un archivo temporal
     with tempfile.NamedTemporaryFile(delete=False, suffix=".html") as tmpfile:
