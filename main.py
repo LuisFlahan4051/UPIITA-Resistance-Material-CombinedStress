@@ -83,6 +83,8 @@ titleGroup = titleGroupNormal
 titles = titlesNormal
 axis_titles = axis_titlesNormal
 
+global updateBtn
+updateBtn = MainWindow.findChild(QtWidgets.QPushButton, 'updateBtn')
 
 global normalStress, normalStress2D, shearStress, mohrStress
 normalStress = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress')
@@ -163,10 +165,12 @@ def run_app():
     addLoadPoint.clicked.connect(lambda: showLoadPointEntry(MainWindow))
     
     # Actualizar
-    updateBtn = MainWindow.findChild(QtWidgets.QPushButton, 'updateBtn')
+    
     updateBtn.clicked.connect(lambda: (
         updateStructures()
     ))
+    updateBtn.setEnabled(False)
+    
 
     deleteBar = MainWindow.findChild(QtWidgets.QPushButton, 'deleteBar')
     deleteBar.clicked.connect(lambda: (
@@ -177,6 +181,24 @@ def run_app():
     deleteLoadPoint.clicked.connect(lambda: (
         deleteRows(dataForcesTable)
     ))
+
+
+    updateBtn.setEnabled(False)
+    normalStress.setEnabled(False)
+    normalStress2D.setEnabled(False)
+    shearStress.setEnabled(False)
+    mohrStress.setEnabled(False)
+
+    
+
+    dataBarsTable.model().rowsInserted.connect(updateButtonState)
+    dataBarsTable.model().rowsRemoved.connect(updateButtonState)
+    dataForcesTable.model().rowsInserted.connect(updateButtonState)
+    dataForcesTable.model().rowsRemoved.connect(updateButtonState)
+    
+
+    updateButtonState()
+
 
     # TODO: trabajar con los estados
 
@@ -203,6 +225,20 @@ def run_app():
     splash.finish(MainWindow)
     
     sys.exit(app.exec())
+
+def updateButtonState():
+        if dataBarsTable.rowCount() > 0 and dataForcesTable.rowCount() > 0 and interestBar.count() > 0:
+            updateBtn.setEnabled(True)
+            normalStress.setEnabled(True)
+            normalStress2D.setEnabled(True)
+            shearStress.setEnabled(True)
+            mohrStress.setEnabled(True)
+        else:
+            updateBtn.setEnabled(False)
+            normalStress.setEnabled(False)
+            normalStress2D.setEnabled(False)
+            shearStress.setEnabled(False)
+            mohrStress.setEnabled(False)
 
 ### Delete a row --------------------------------------------
 
