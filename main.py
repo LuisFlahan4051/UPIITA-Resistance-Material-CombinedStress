@@ -102,7 +102,8 @@ def run_app():
 
     # Initialization ---------
     # Tabla de barras.
-    headersBars = ['Origen X', 
+    headersBars = ['Eliminar',
+                'Origen X', 
                'Origen Y', 
                'Origen Z', 
                'Extremo X', 
@@ -119,7 +120,7 @@ def run_app():
                'Lado 2', 
                'Eje RH', 
                'Peralte', 
-               'Ancho Peralte', 
+               'Ancho Alma', 
                'Patin', 
                'Ancho Patin', 
                'Eje IPR'] 
@@ -127,7 +128,8 @@ def run_app():
     replaceHeaders(dataBarsTable, headersBars)
 
     # Tabla de Fuerzas
-    headersForces = ['Posición X', 
+    headersForces = ['Eliminar',
+                'Posición X', 
                'Posición Y', 
                'Posición Z', 
                'Fuerza X', 
@@ -166,6 +168,16 @@ def run_app():
         updateStructures()
     ))
 
+    deleteBar = MainWindow.findChild(QtWidgets.QPushButton, 'deleteBar')
+    deleteBar.clicked.connect(lambda: (
+        deleteRows(dataBarsTable)
+    ))
+
+    deleteLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'deleteLoadPoint')
+    deleteLoadPoint.clicked.connect(lambda: (
+        deleteRows(dataForcesTable)
+    ))
+
     # TODO: trabajar con los estados
 
     plot1 = plotNormalStress()
@@ -192,7 +204,30 @@ def run_app():
     
     sys.exit(app.exec())
 
+### Delete a row --------------------------------------------
+
+def deleteRows(table):
+    rows_to_delete = []
+    for row in range(table.rowCount()):
+        checkbox_widget = table.cellWidget(row, 0)
+        if checkbox_widget is not None:
+            checkbox = checkbox_widget.findChild(QCheckBox)
+            if checkbox.isChecked():
+                rows_to_delete.append(row)
+    
+    for row in reversed(rows_to_delete):
+        table.removeRow(row)
+
+
 ### Agregar un punto de carga -------------------------------------------- 
+def validateFields(dialog, acceptButton):
+    fields = dialog.findChildren(QtWidgets.QLineEdit)
+    for field in fields:
+        if field.isEnabled() and not field.text():
+            acceptButton.setEnabled(False)
+            return
+    acceptButton.setEnabled(True)
+
 def showLoadPointEntry(parent):
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("./addPointForce.ui")
@@ -214,11 +249,10 @@ def showLoadPointEntry(parent):
     dialog_mz.setText("0")
 
     acceptButton = dialog.findChild(QtWidgets.QDialogButtonBox, 'acceptButton').button(QtWidgets.QDialogButtonBox.Ok)
-    
     validateFields(dialog, acceptButton)
-
     for field in dialog.findChildren(QtWidgets.QLineEdit):
         field.textChanged.connect(lambda: validateFields(dialog, acceptButton))
+
 
     if dialog.exec() == QDialog.Accepted:
         data = [dialog_px.text(), dialog_py.text(), dialog_pz.text(), dialog_fx.text(), dialog_fy.text(), dialog_fz.text(), dialog_mx.text(), dialog_my.text(), dialog_mz.text()]
@@ -272,14 +306,6 @@ def updateProfileFields(comboBoxPerfil, internalDiameter, externalDiameter, side
         widthPatin.setEnabled(True)
         comboBoxIPRHAxis.setEnabled(True)
 
-def validateFields(dialog, acceptButton):
-    fields = dialog.findChildren(QtWidgets.QLineEdit)
-    for field in fields:
-        if field.isEnabled() and not field.text():
-            acceptButton.setEnabled(False)
-            return
-    acceptButton.setEnabled(True)
-
 def showBarEntry(parent):
     loader = QtUiTools.QUiLoader()
     file = QtCore.QFile("./addBar.ui")
@@ -311,6 +337,7 @@ def showBarEntry(parent):
 
     # Perfil Circular
     internalDiameter = dialog.findChild(QtWidgets.QLineEdit, 'internalDiameter')
+    internalDiameter.setText('0')
     externalDiameter = dialog.findChild(QtWidgets.QLineEdit, 'externalDiameter')
 
     # Perfil Rectangular
@@ -392,15 +419,30 @@ def addRowDataToTable(table_widget, data, headers=None):
     
     # Establecer los encabezados de las columnas si se proporcionan
     if headers:
-        table_widget.setHorizontalHeaderLabels(headers)
+        newHeaders = ['Eliminar']
+        for header in headers:
+            newHeaders.append(header)
+        table_widget.setHorizontalHeaderLabels(newHeaders)
     
     # Insertar una nueva fila
     table_widget.insertRow(row_count)
 
     # Insertar los datos en las columnas
+    addCheckboxToField(table_widget,row_count,0)
     for i, value in enumerate(data):
-        table_widget.setItem(row_count, i, QTableWidgetItem(str(value)))
+        table_widget.setItem(row_count, i+1, QTableWidgetItem(str(value)))
 
+def addCheckboxToField(table, rowNumber, fieldNumber):
+    checkbox = QCheckBox()
+    checkbox_widget = QWidget()
+    checkbox_layout = QHBoxLayout()
+    checkbox_layout.addWidget(checkbox)
+    checkbox_layout.setAlignment(QtCore.Qt.AlignCenter)
+    checkbox_layout.setContentsMargins(0, 0, 0, 0)
+    checkbox_widget.setLayout(checkbox_layout)
+    table.setCellWidget(rowNumber, fieldNumber, checkbox_widget)
+
+# Experimental
 def setResultValuesToTable(outDataTable, resultados):
     theta = np.linspace(0,360,100)
     eX = resultados['maximoEsfuerzoNormalFlexionanteX']*np.sin(np.radians(theta))
@@ -411,7 +453,8 @@ def setResultValuesToTable(outDataTable, resultados):
         outDataTable.setItem(0, i, QTableWidgetItem(f"{engine.format_eng(eX[i])}"))
         outDataTable.setItem(1, i, QTableWidgetItem(f"{engine.format_eng(eY[i])}"))
         outDataTable.setItem(2, i, QTableWidgetItem(f"{engine.format_eng(eN[i])}"))
-    
+
+# Experimental
 def add_row_with_checkbox(table_widget):
     # Obtener el número actual de filas
     row_count = table_widget.rowCount()
@@ -456,26 +499,35 @@ def updateStructures():
     newFig = go.Figure()
     
     row_count = dataBarsTable.rowCount()
+    # Define column indices
+    ORIGIN_X, ORIGIN_Y, ORIGIN_Z = 1, 2, 3
+    END_X, END_Y, END_Z = 4, 5, 6
+    PROFILE_TYPE = 11
+    DIAMETER_INT = 12
+    DIAMETER_EXT = 13
+    SIDE1, SIDE2 = 14, 15
+    PERALTE, WIDTH_ALMA, PATIN, WIDTH_PATIN = 17, 18, 19, 20
+
     for row in range(row_count):
-        if dataBarsTable.item(row, 10).text() == "Circular":
-            initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
-            endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
-            diameter = float(dataBarsTable.item(row, 12).text())
-            radius = diameter / 2
+        if dataBarsTable.item(row, PROFILE_TYPE).text() == "Circular":
+            initialPoint = [float(dataBarsTable.item(row, ORIGIN_X).text()), float(dataBarsTable.item(row, ORIGIN_Y).text()), float(dataBarsTable.item(row, ORIGIN_Z).text())]
+            endPoint = [float(dataBarsTable.item(row, END_X).text()), float(dataBarsTable.item(row, END_Y).text()), float(dataBarsTable.item(row, END_Z).text())]
+            diameter_ext = float(dataBarsTable.item(row, DIAMETER_EXT).text())
+            radius = diameter_ext / 2
             graph.drawCylinderPointToPoint(initial_point=initialPoint, final_point=endPoint, radius=radius, fig=newFig)
-        if dataBarsTable.item(row, 10).text() == "Rectangular":
-            initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
-            endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
-            side1 = float(dataBarsTable.item(row, 13).text())
-            side2 = float(dataBarsTable.item(row, 14).text())
+        if dataBarsTable.item(row, PROFILE_TYPE).text() == "Rectangular":
+            initialPoint = [float(dataBarsTable.item(row, ORIGIN_X).text()), float(dataBarsTable.item(row, ORIGIN_Y).text()), float(dataBarsTable.item(row, ORIGIN_Z).text())]
+            endPoint = [float(dataBarsTable.item(row, END_X).text()), float(dataBarsTable.item(row, END_Y).text()), float(dataBarsTable.item(row, END_Z).text())]
+            side1 = float(dataBarsTable.item(row, SIDE1).text())
+            side2 = float(dataBarsTable.item(row, SIDE2).text())
             graph.drawPrismPointToPoint(initialPoint, endPoint, width=side1, height=side2, fig=newFig)
-        if dataBarsTable.item(row, 10).text() == "IPR":
-            initialPoint = [float(dataBarsTable.item(row, 0).text()), float(dataBarsTable.item(row, 1).text()), float(dataBarsTable.item(row, 2).text())]
-            endPoint = [float(dataBarsTable.item(row, 3).text()), float(dataBarsTable.item(row, 4).text()), float(dataBarsTable.item(row, 5).text())]
-            peralte = float(dataBarsTable.item(row, 16).text())
-            widthAlma = float(dataBarsTable.item(row, 17).text())
-            patin = float(dataBarsTable.item(row, 18).text())
-            widthPatin = float(dataBarsTable.item(row, 19).text())
+        if dataBarsTable.item(row, PROFILE_TYPE).text() == "IPR":
+            initialPoint = [float(dataBarsTable.item(row, ORIGIN_X).text()), float(dataBarsTable.item(row, ORIGIN_Y).text()), float(dataBarsTable.item(row, ORIGIN_Z).text())]
+            endPoint = [float(dataBarsTable.item(row, END_X).text()), float(dataBarsTable.item(row, END_Y).text()), float(dataBarsTable.item(row, END_Z).text())]
+            peralte = float(dataBarsTable.item(row, PERALTE).text())
+            widthAlma = float(dataBarsTable.item(row, WIDTH_ALMA).text())
+            patin = float(dataBarsTable.item(row, PATIN).text())
+            widthPatin = float(dataBarsTable.item(row, WIDTH_PATIN).text())
             graph.drawIPRprofile(initialPoint, endPoint, widthAlma, widthPatin, patin, peralte, newFig)
     
     estructure = newFig
