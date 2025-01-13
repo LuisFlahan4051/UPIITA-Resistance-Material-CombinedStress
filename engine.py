@@ -87,7 +87,7 @@ def getENG(magnitud):
     return mantissa, exponent
 
 class Profile:
-    def __init__(self, profile_type, dimension1, dimension2=None):
+    def __init__(self, profile_type, dimension1, dimension2=None, peralte=None, alma_width=None, patin=None, patin_width=None):
         self.profile_type = profile_type
         if profile_type == 'circle':
             self.radius = dimension1
@@ -103,6 +103,18 @@ class Profile:
             self.area = self.width * self.height
             self.momentX = (self.width * (self.height**3)) / 12
             self.momentY = (self.height * (self.width**3)) / 12
+            self.momentZ = self.momentX + self.momentY
+        # TODO: Check the correct implement of the IPR profile
+        elif profile_type == 'IPR':
+            self.peralte = peralte
+            self.alma_width = alma_width
+            self.patin = patin
+            self.patin_width = patin_width
+            area1 = patin_width * patin
+            area2 = alma_width * (peralte - 2 * patin_width)
+            self.area = 2 * area1 + area2
+            self.momentX = 2 * ((patin * patin_width**3) / 12 + (patin * patin_width) * ((peralte / 2 - patin_width / 2)**2)) + (alma_width * peralte - 2 * patin_width**3) / 12
+            self.momentY = 2 * (patin_width * patin**3) / 12 + (peralte - 2 * patin_width * alma_width**3) / 12
             self.momentZ = self.momentX + self.momentY
 
 # Definir los materiales y sus propiedades
@@ -173,7 +185,7 @@ def esfuerzoNormalPromedio(vectorFuerza, area, ejeNormal):
     return vectorFuerza[ejeNormal]/area
 
 
-def esfuerzoCortante(vectorFuerza, area, ejeCortante, type='circle', base=0, height=0):
+def esfuerzoCortante(vectorFuerza, profile, ejeCortante):
     """
     Entrega el esfuerzo cortante en función de un vector de fuerza y un área.
 
@@ -185,12 +197,12 @@ def esfuerzoCortante(vectorFuerza, area, ejeCortante, type='circle', base=0, hei
     Returns:
         float: el esfuerzo cortante en función de un eje cortante.
     """ 
-    if type == 'circle':
-        promedio= vectorFuerza[ejeCortante]/area
+    if profile.profile_type == 'circle':
+        promedio= vectorFuerza[ejeCortante]/profile.area
         maxCortante= (4/3) * promedio
         return promedio, maxCortante
-    if type == 'rectangle':
-        promedio= vectorFuerza[ejeCortante]/area
+    if profile.profile_type == 'rectangle':
+        promedio= vectorFuerza[ejeCortante]/profile.area
         maxCortante= (3/2)*promedio
         return promedio, maxCortante
 
@@ -231,15 +243,14 @@ def esfuerzoCortantePorTorsion(matrizMomento, profile, ejeNormal=cord_z):
         if ejeNormal == cord_z:
             promedio = (matrizMomento[cord_z] * profile.radius) / profile.polarMomentZ
         if ejeNormal == cord_x:
-            promedio = (matrizMomento[cord_x] * profile.radius) / profile.polarMomentZ
+            promedio = (matrizMomento[cord_x] * profile.radius) / profile.momentX
         if ejeNormal == cord_y:
-            promedio = (matrizMomento[cord_y] * profile.radius) / profile.polarMomentZ
+            promedio = (matrizMomento[cord_y] * profile.radius) / profile.momentY
 
         maxCortante = (2/3) * promedio
         return promedio, maxCortante
     
-" ------------------------ MAIN ------------------------"
-def engine():
+def outTest():
     profile = Profile('circle', 40*m)
     vectorPosicion1 = np.array([-750*m, 600*m, 500*m])
     vectorFuerza1 = np.array([-120*k, 250*k, 400*k])
@@ -247,11 +258,11 @@ def engine():
     print(f"El momento es: {matrizMomento}")
 
     eNormalPromedio = esfuerzoNormalPromedio(vectorFuerza1, profile.area, cord_z)
-    maximoEsfuerzoCortanteX, esfuerzoCortantePromedioX = esfuerzoCortante(vectorFuerza1, profile.area, cord_x)
-    maximoEsfuerzoCortanteY, esfuerzoCortantePromedioY = esfuerzoCortante(vectorFuerza1, profile.area, cord_y)
+    esfuerzoCortantePromedioX,maximoEsfuerzoCortanteX = esfuerzoCortante(vectorFuerza1, profile, cord_x)
+    esfuerzoCortantePromedioY,maximoEsfuerzoCortanteY = esfuerzoCortante(vectorFuerza1, profile, cord_y)
 
     maximoEsfuerzoNormalFlexionanteX, maximoEsfuerzoNormalFlexionanteY = esfuerzoNormalPorFlexion(matrizMomento, profile)
-    maximoEsfuerzoCortanteTorsion, esfuerzoCortanteTorsionPromedio = esfuerzoCortantePorTorsion(matrizMomento, profile)
+    esfuerzoCortanteTorsionPromedio, maximoEsfuerzoCortanteTorsion,  = esfuerzoCortantePorTorsion(matrizMomento, profile)
     
     print("--------------------------")
     print(f"El esfuerzo normal es: {format_eng(eNormalPromedio)} Pa")
@@ -275,6 +286,15 @@ def engine():
     print(et)
     eang= np.degrees(np.arctan(ey/ex))
     print(eang)
+
+    theta = np.linspace(0,360,100)
+    eX = maximoEsfuerzoNormalFlexionanteX*np.sin(np.radians(theta))
+    eY = maximoEsfuerzoNormalFlexionanteY*np.cos(np.radians(theta))
+    eN = eNormalPromedio*np.ones_like(100)
+
+    print(eX)
+    print(eY)
+    print(eN)
 
 
 

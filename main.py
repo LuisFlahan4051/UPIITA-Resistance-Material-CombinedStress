@@ -9,7 +9,6 @@ import tempfile
 import graph
 import engine
 from engine import n, u, m, k, M, G, T, cord_x, cord_y, cord_z
-import test
 import sys
 
 def main():
@@ -40,7 +39,6 @@ global outDataTable
 outDataTable = MainWindow.findChild(QtWidgets.QTableWidget, 'outDataTable')
 
 global results, materials
-results = engine.engine()
 materials = engine.materials
 
 global interestPointX, interestPointY, interestPointZ
@@ -92,11 +90,18 @@ normalStress2D = MainWindow.findChild(QtWidgets.QRadioButton, 'normalStress2D')
 shearStress = MainWindow.findChild(QtWidgets.QRadioButton, 'shearStress')
 mohrStress = MainWindow.findChild(QtWidgets.QRadioButton, 'mohr')
 
+global interestProfile, resultantForce, resultantMoment, normalAxis, ejeCortante1, ejeCortante2
+global esfuerzoNormalPromedio, maximoEsfuerzoNormalMx, maximoEsfuerzoNormalMy
+global esfuerzoPromedioCortanteX, maximoEsfuerzoCortanteX, esfuerzoPromedioCortanteY, maximoEsfuerzoCortanteY, esfuerzoCortantePorTorsionPromedio, maximoEsfuerzoCortantePorTorsion
+
+
+
+
 ### Función principal --------------------------------------------
 
 def run_app():
     # Splash Window --------
-    splash_pix = QtGui.QPixmap('./splash_image.png')
+    splash_pix = QtGui.QPixmap('./TitleApp.png')
     splash = QtWidgets.QSplashScreen(splash_pix, QtCore.Qt.WindowStaysOnTopHint)
     splash.setMask(splash_pix.mask())
     splash.show()
@@ -143,12 +148,6 @@ def run_app():
     dataForcesTable.setColumnCount(len(headersForces))
     replaceHeaders(dataForcesTable, headersForces)
 
-    # Tabla de datos de salida
-    outDataTable.setColumnCount(100)
-    outDataTable.setRowCount(3)
-    outDataTable.setVerticalHeaderLabels(['Esfuerzo Normal por Mx','Esfuerzo Normal por My','Esfuerzo Normal'])
-    setResultValuesToTable(outDataTable, results)
-
     # Punto de interés a analizar
     interestPointX.setText("0")
     interestPointY.setText("0")
@@ -165,18 +164,21 @@ def run_app():
     addLoadPoint.clicked.connect(lambda: showLoadPointEntry(MainWindow))
     
     # Actualizar
-    
     updateBtn.clicked.connect(lambda: (
-        updateStructures()
+        updateStructures(),
+        updateInteresProfile(),
+        updateMaths(),
+        setResultValuesToTable(outDataTable)
     ))
     updateBtn.setEnabled(False)
     
-
+    # Eliminar Barra
     deleteBar = MainWindow.findChild(QtWidgets.QPushButton, 'deleteBar')
     deleteBar.clicked.connect(lambda: (
         deleteRows(dataBarsTable)
     ))
 
+    # Eliminar Punto de Fuerza
     deleteLoadPoint = MainWindow.findChild(QtWidgets.QPushButton, 'deleteLoadPoint')
     deleteLoadPoint.clicked.connect(lambda: (
         deleteRows(dataForcesTable)
@@ -188,35 +190,22 @@ def run_app():
     normalStress2D.setEnabled(False)
     shearStress.setEnabled(False)
     mohrStress.setEnabled(False)
-
-    
-
     dataBarsTable.model().rowsInserted.connect(updateButtonState)
     dataBarsTable.model().rowsRemoved.connect(updateButtonState)
     dataForcesTable.model().rowsInserted.connect(updateButtonState)
     dataForcesTable.model().rowsRemoved.connect(updateButtonState)
-    
 
-    updateButtonState()
-
-
-    # TODO: trabajar con los estados
-
-    plot1 = plotNormalStress()
-    plot2 = plotShearStress(results)
-    plot3 = plotNormalStress2D(results)
-    plotMohrFile = plotMohr()
-
-    
     normalStress.toggled.connect(lambda: (
-        web_view.load(QtCore.QUrl.fromLocalFile(plot1))))
+        web_view.load(QtCore.QUrl.fromLocalFile(plotNormalStress()))
+    ))
     shearStress.toggled.connect(lambda: (
-        web_view.load(QtCore.QUrl.fromLocalFile(plot2))))
+        web_view.load(QtCore.QUrl.fromLocalFile(plotShearStress()))
+    ))
     normalStress2D.toggled.connect(lambda: (
-        web_view.load(QtCore.QUrl.fromLocalFile(plot3))))
-    
+        web_view.load(QtCore.QUrl.fromLocalFile(plotNormalStress2D()))
+    ))
     mohrStress.toggled.connect(lambda: (
-        web_view.load(QtCore.QUrl.fromLocalFile(plotMohrFile))
+        web_view.load(QtCore.QUrl.fromLocalFile(plotMohr()))
     ))
 
 
@@ -239,6 +228,93 @@ def updateButtonState():
             normalStress2D.setEnabled(False)
             shearStress.setEnabled(False)
             mohrStress.setEnabled(False)
+
+def updateMaths():
+    # Posiciones en la tabla de fuerzas
+    PX,PY,PZ = 1,2,3
+    FX,FY,FZ = 4,5,6
+    MX,MY,MZ = 7,8,9
+
+    forces = []
+    rs = []
+    moments = []
+
+    for row in range(dataForcesTable.rowCount()):
+        force = np.array([float(dataForcesTable.item(row, FX).text()), 
+                 float(dataForcesTable.item(row, FY).text()), 
+                 float(dataForcesTable.item(row, FZ).text())])
+        forces.append(force)
+
+        p = np.array([float(dataForcesTable.item(row, PX).text()), 
+             float(dataForcesTable.item(row, PY).text()), 
+             float(dataForcesTable.item(row, PZ).text())])
+        
+        interest = np.array([float(interestPointX.text()), float(interestPointY.text()), float(interestPointZ.text())])
+        r = p - interest        
+        rs.append(r)
+        
+        momentsOfForces = np.cross(r, force)
+        moments.append(momentsOfForces)
+        
+        if float(dataForcesTable.item(row, MX).text()) != 0 or float(dataForcesTable.item(row, MY).text()) != 0 or float(dataForcesTable.item(row, MZ).text()) != 0:
+            aditionalsMoments = np.array([float(dataForcesTable.item(row, MX).text()),
+                                      float(dataForcesTable.item(row, MY).text()),
+                                      float(dataForcesTable.item(row, MZ).text())])
+            moments.append(aditionalsMoments)
+    
+    global resultantForce, resultantMoment
+    resultantForce = np.sum(forces, axis=0)
+    resultantMoment = np.sum(moments, axis=0)
+    
+    global esfuerzoNormalPromedio, maximoEsfuerzoNormalMx, maximoEsfuerzoNormalMy
+    esfuerzoNormalPromedio = engine.esfuerzoNormalPromedio(resultantForce, interestProfile.area, normalAxis)
+    maximoEsfuerzoNormalMx, maximoEsfuerzoNormalMy = engine.esfuerzoNormalPorFlexion(resultantMoment, interestProfile, normalAxis)
+    
+    global esfuerzoPromedioCortanteX, maximoEsfuerzoCortanteX, esfuerzoPromedioCortanteY, maximoEsfuerzoCortanteY, esfuerzoCortantePorTorsionPromedio, maximoEsfuerzoCortantePorTorsion
+    esfuerzoPromedioCortanteX, maximoEsfuerzoCortanteX = engine.esfuerzoCortante(resultantForce, interestProfile, ejeCortante1)
+    esfuerzoPromedioCortanteY, maximoEsfuerzoCortanteY = engine.esfuerzoCortante(resultantForce, interestProfile, ejeCortante2)
+    esfuerzoCortantePorTorsionPromedio, maximoEsfuerzoCortantePorTorsion = engine.esfuerzoCortantePorTorsion(resultantMoment, interestProfile, normalAxis)
+
+
+def getNormalAxis(normalAxis):
+    if normalAxis == "x" or normalAxis == "X":
+        return cord_x
+    if normalAxis == "y" or normalAxis == "Y":
+        return cord_y
+    if normalAxis == "z" or normalAxis == "Z":
+        return cord_z
+
+
+def updateInteresProfile():
+    EJENORMAL = 7
+    PROFILE = 11
+    RADIUS = 13
+    SIDE1 = 14
+    SIDE2 = 15
+    PERALTE = 17
+    ALMA_WIDTH = 18
+    PATIN = 19
+    PATIN_WIDTH = 20
+    global interestProfile
+    rowInterestBar = int(interestBar.currentText())
+    if dataBarsTable.item(rowInterestBar-1, PROFILE).text() == "Circular":
+        interestProfile = engine.Profile('circle', float(dataBarsTable.item(rowInterestBar-1, RADIUS).text()))
+    if dataBarsTable.item(rowInterestBar-1, PROFILE).text() == "Rectangular":
+        interestProfile = engine.Profile('rectangle', float(dataBarsTable.item(rowInterestBar-1, SIDE1).text()), float(dataBarsTable.item(rowInterestBar-1, SIDE2).text()))
+    if dataBarsTable.item(rowInterestBar-1, PROFILE).text() == "IPR":
+        interestProfile = engine.Profile('IPR', dimension1=0, peralte=float(dataBarsTable.item(rowInterestBar-1, PERALTE).text()), alma_width=float(dataBarsTable.item(rowInterestBar, ALMA_WIDTH).text()), patin=float(dataBarsTable.item(rowInterestBar, PATIN).text()), patin_width=float(dataBarsTable.item(rowInterestBar, PATIN_WIDTH).text()))
+    
+    global normalAxis, ejeCortante1, ejeCortante2
+    normalAxis = getNormalAxis(dataBarsTable.item(int(interestBar.currentText())-1, EJENORMAL).text())
+    if normalAxis == cord_z:
+        ejeCortante1 = cord_x
+        ejeCortante2 = cord_y
+    if normalAxis == cord_y:
+        ejeCortante1 = cord_x
+        ejeCortante2 = cord_z
+    if normalAxis == cord_x:
+        ejeCortante1 = cord_y
+        ejeCortante2 = cord_z
 
 ### Delete a row --------------------------------------------
 
@@ -478,17 +554,59 @@ def addCheckboxToField(table, rowNumber, fieldNumber):
     checkbox_widget.setLayout(checkbox_layout)
     table.setCellWidget(rowNumber, fieldNumber, checkbox_widget)
 
-# Experimental
-def setResultValuesToTable(outDataTable, resultados):
-    theta = np.linspace(0,360,100)
-    eX = resultados['maximoEsfuerzoNormalFlexionanteX']*np.sin(np.radians(theta))
-    eY = resultados['maximoEsfuerzoNormalFlexionanteY']*np.cos(np.radians(theta))
-    eN = resultados['esfuerzoNormalPromedio']*np.ones_like(theta)
+def addDataRowToTable(table_widget, data, verticalTitle, horizontalTitle):
+    """
+    Agrega una fila de datos a la tabla.
 
-    for i in range(0,100):
-        outDataTable.setItem(0, i, QTableWidgetItem(f"{engine.format_eng(eX[i])}"))
-        outDataTable.setItem(1, i, QTableWidgetItem(f"{engine.format_eng(eY[i])}"))
-        outDataTable.setItem(2, i, QTableWidgetItem(f"{engine.format_eng(eN[i])}"))
+    Args:
+        table_widget (QTableWidget): La tabla a la que se agregarán los datos.
+        data (list): Una lista de valores que se agregarán como una nueva fila.
+        verticalTitle (str): El título de la fila.
+        horizontalTitle (str): El título de la columna.
+    """
+    # Obtener el número actual de filas y columnas
+    row_count = table_widget.rowCount()
+    current_column_count = table_widget.columnCount()
+    new_column_count = len(data) 
+    
+    # Ajustar el número de columnas si es necesario
+    if new_column_count > current_column_count:
+        table_widget.setColumnCount(new_column_count)
+    elif new_column_count < current_column_count:
+        # Rellenar los datos con valores vacíos si hay menos columnas en los datos
+        data.extend([''] * (current_column_count - new_column_count))
+        new_column_count = current_column_count
+    
+    # Insertar una nueva fila
+    table_widget.insertRow(row_count)
+    table_widget.insertRow(row_count+1)
+
+
+    # Titulo en primera columna
+    table_widget.setVerticalHeaderItem(row_count, QTableWidgetItem(verticalTitle))
+    table_widget.setVerticalHeaderItem(row_count+1, QTableWidgetItem('Datos:'))
+
+    for i, value in enumerate(data):
+        table_widget.setItem(row_count, i, QTableWidgetItem(str(horizontalTitle[i])))
+        table_widget.setItem(row_count+1, i, QTableWidgetItem(engine.format_eng(value)))
+
+# Experimental
+def setResultValuesToTable(outDataTable):
+    outDataTable.setRowCount(0)
+    theta = np.linspace(0,360,100)
+    eX = maximoEsfuerzoNormalMx*np.sin(np.radians(theta))
+    eY = maximoEsfuerzoNormalMy*np.cos(np.radians(theta))
+    eN = esfuerzoNormalPromedio*np.ones_like(theta)
+    sumaEsfuerzos = eX + eY + eN
+
+    titleDegree = [len(theta)]
+    titleDegree = [f"{int(degree)}°" for degree in theta]
+
+    addDataRowToTable(outDataTable, eX, 'Esfuerzo Normal por Mx', titleDegree)
+    addDataRowToTable(outDataTable, eY, 'Esfuerzo Normal por My', titleDegree)
+    addDataRowToTable(outDataTable, eN, 'Esfuerzo Normal', titleDegree)
+    addDataRowToTable(outDataTable, sumaEsfuerzos, 'Suma de Esfuerzos', titleDegree)
+
 
 # Experimental
 def add_row_with_checkbox(table_widget):
@@ -565,7 +683,7 @@ def updateStructures():
             patin = float(dataBarsTable.item(row, PATIN).text())
             widthPatin = float(dataBarsTable.item(row, WIDTH_PATIN).text())
             graph.drawIPRprofile(initialPoint, endPoint, widthAlma, widthPatin, patin, peralte, newFig)
-    
+    global estructure
     estructure = newFig
     figs = [estructure, fig2, fig3, fig4]
     html_file = plotGraphs(figs, titleGroup, titles, axis_titles)
@@ -613,25 +731,22 @@ def plotGraphs(figures, groupTitle='Grupo 1', titles=None, axis_titles=None, plo
     return html_file
 
 def plotNormalStress():
-    profile = engine.Profile('circle', 40 * 10**-3)
-
+    
     global fig2, fig3, fig4
-    fig2 = graph.graphNormalStress(results["esfuerzoNormalPromedio"], radius=profile.radius, density=10)
-    fig3, fig4 = graph.graphNormalStressOfMoment(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], radius=profile.radius)
+    fig2 = graph.graphNormalStress(esfuerzoNormalPromedio, radius=interestProfile.radius, density=10)
+    fig3, fig4 = graph.graphNormalStressOfMoment(maximoEsfuerzoNormalMx, maximoEsfuerzoNormalMy, radius=interestProfile.radius)
     
     return plotGraphs([estructure, fig2, fig3, fig4], titleGroupNormal, titlesNormal, axis_titlesNormal, plot_type='surface')
 
-def plotNormalStress2D(results):
-    fig3, fig2, fig1 = graph.graphStress(results["maximoEsfuerzoNormalFlexionanteX"], results["maximoEsfuerzoNormalFlexionanteY"], results["esfuerzoNormalPromedio"])
+def plotNormalStress2D():
+    fig3, fig2, fig1 = graph.graphStress(maximoEsfuerzoNormalMx, maximoEsfuerzoNormalMy, esfuerzoNormalPromedio)
     
     return plotGraphs([fig1, fig2, fig3], titleGroupNormal2D, titlesNormal2D, axis_titlesNormal2D, plot_type='xy')
 
-def plotShearStress(results):
-    profile = engine.Profile('circle', 40 * 10**-3)
-
-    fig1 = graph.graphFlexuralShearStress(results["maximoEsfuerzoCortanteX"], radius=profile.radius)
-    fig2 = graph.graphFlexuralShearStress(results["maximoEsfuerzoCortanteY"], radius=profile.radius, direction=-1)
-    fig3 = graph.graphTorsionalShearStress(results["maximoEsfuerzoCortanteTorsion"], radius=profile.radius)
+def plotShearStress():
+    fig1 = graph.graphFlexuralShearStress(maximoEsfuerzoCortanteX, radius=interestProfile.radius)
+    fig2 = graph.graphFlexuralShearStress(maximoEsfuerzoCortanteY, radius=interestProfile.radius, direction=-1)
+    fig3 = graph.graphTorsionalShearStress(maximoEsfuerzoCortantePorTorsion, radius=interestProfile.radius)
 
     return plotGraphs([estructure,fig1, fig2, fig3], titleGroupCortante, titlesCortante, axis_titlesCortante, plot_type='surface')
 
@@ -651,29 +766,29 @@ def plotMohr():
     tau_zx = 10
 
     # Crear subplots
-    fig = make_subplots(rows=1, cols=3, specs=[[{'type': 'xy'}, {'type': 'surface'}, {'type': 'surface'}]],
-                        subplot_titles=("Círculo de Mohr 2D", "Círculo de Mohr 3D", "Círculo de Mohr 3D Esferas"))
+    fig = make_subplots(rows=1, cols=4, specs=[[{'type': 'xy'}, {'type': 'surface'}, {'type': 'surface'},{'type': 'surface'}]],
+                        subplot_titles=("Círculo de Mohr 2D", "Círculo de Mohr 3D", "Círculo de Mohr 3D Esferas", ""))
 
     # Graficar Círculo de Mohr 2D
-    fig1 = test.graficar_circulo_mohr(sigma_x, sigma_y, tau_xy)
+    fig1 = graph.graficar_circulo_mohr(sigma_x, sigma_y, tau_xy)
     for trace in fig1.data:
         fig.add_trace(trace, row=1, col=1)
 
     # Graficar Círculo de Mohr 3D
-    fig2 = test.graficar_circulo_mohr_3d(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_zx)
+    fig2 = graph.graficar_circulo_mohr_3d(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_zx)
     for trace in fig2.data:
         fig.add_trace(trace, row=1, col=2)
 
     # Graficar Círculo de Mohr 3D Esferas
-    fig3 = test.graficar_circulo_mohr_3d_esferas(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_zx)
+    fig3 = graph.graficar_circulo_mohr_3d_esferas(sigma_x, sigma_y, sigma_z, tau_xy, tau_yz, tau_zx)
     for trace in fig3.data:
         fig.add_trace(trace, row=1, col=3)
 
     # Ajustar el tamaño de cada gráfica
     fig.update_layout(
         title='Círculo de Mohr',
-        height=600,  # Altura total de la figura
-        width=1800,  # Ancho total de la figura
+        height=350,  # Altura total de la figura
+        width=1500,  # Ancho total de la figura
         scene=dict(
             xaxis_title='Eje X',
             yaxis_title='Eje Y',
@@ -688,7 +803,13 @@ def plotMohr():
             xaxis_title='Eje X',
             yaxis_title='Eje Y',
             zaxis_title='Eje Z'
-        )
+        ),
+        scene4=dict(
+            xaxis_title='Eje X',
+            yaxis_title='Eje Y',
+            zaxis_title='Eje Z'
+        ),
+        showlegend=False  # Ocultar la barra de trazos
     )
 
     # Guardar la figura en un archivo temporal
