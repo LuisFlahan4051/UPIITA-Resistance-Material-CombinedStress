@@ -602,10 +602,20 @@ def setResultValuesToTable(outDataTable):
     titleDegree = [len(theta)]
     titleDegree = [f"{int(degree)}°" for degree in theta]
 
+    #TODO: verificar matemáticamente si los esfuerzos cortantes están bien
+    tauX = maximoEsfuerzoCortanteX * (1 - (np.radians(theta) / np.radians(180))**2)
+    tauY = maximoEsfuerzoCortanteY * (1 - (np.radians(theta) / np.radians(180))**2)
+    tauT = esfuerzoCortantePorTorsionPromedio * np.ones_like(theta)
+    sumaCortantes = tauX + tauY + tauT
+
     addDataRowToTable(outDataTable, eX, 'Esfuerzo Normal por Mx', titleDegree)
     addDataRowToTable(outDataTable, eY, 'Esfuerzo Normal por My', titleDegree)
     addDataRowToTable(outDataTable, eN, 'Esfuerzo Normal', titleDegree)
     addDataRowToTable(outDataTable, sumaEsfuerzos, 'Suma de Esfuerzos', titleDegree)
+    addDataRowToTable(outDataTable, tauX, 'Esfuerzo Cortante por Flexión Eje 1', titleDegree)
+    addDataRowToTable(outDataTable, tauY, 'Esfuerzo Cortante por Flexión Eje 2', titleDegree)
+    addDataRowToTable(outDataTable, tauT, 'Esfuerzo Cortante por Torsión', titleDegree)
+    addDataRowToTable(outDataTable, sumaCortantes, 'Suma de Cortantes', titleDegree)
 
 
 # Experimental
