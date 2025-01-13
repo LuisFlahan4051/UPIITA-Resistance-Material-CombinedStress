@@ -19,6 +19,7 @@ pefile==2023.2.7
 pillow==11.0.0
 pipenv==2024.4.0
 platformdirs==4.3.6
+plotly==5.24.1
 pyinstaller==6.11.1
 pyinstaller-hooks-contrib==2024.10
 pyparsing==3.2.0
@@ -33,4 +34,5 @@ pywin32-ctypes==0.2.3
 setuptools==75.6.0
 shiboken6==6.8.1
 six==1.16.0
+tenacity==9.0.0
 virtualenv==20.28.0

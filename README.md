@@ -27,3 +27,9 @@ pip freeze > requirements.txt
 ```
 pip install -r requirements.txt
 ```
+
+## ForRegen requeriments used in the project:
+
+```
+pip freeze > requirements.txt
+```
