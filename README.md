@@ -1,5 +1,7 @@
 # UPIITA Resistance Material - Combined Stress
 
+This application was developed as a project in a materials mechanics subject at UPIITA-IPN, Qt technology is used in Python for the development of the UI and implementation of Plotly to display more sophisticated graphics.
+
 ## 🎥 Demo:
 
 [![Demo](screenshots/demo.png)](https://youtu.be/y4GYawCsVuc)
